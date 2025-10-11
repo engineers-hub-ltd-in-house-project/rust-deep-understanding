@@ -61,16 +61,16 @@ fn main() {
 ```mermaid
 graph TD
     subgraph "コード要素"
-        A["`let y = 6;`"] --> B{文<br>Statement};
-        C["`5 + 6`"] --> D{式<br>Expression};
-        E["`{ let x = 3; x + 1 }`"] --> D;
-        F["`another_function()`"] --> D;
+        A["let y = 6;"] --> B{文<br>Statement};
+        C["5 + 6"] --> D{式<br>Expression};
+        E["{ let x = 3; x + 1 }"] --> D;
+        F["another_function()"] --> D;
     end
     subgraph "特徴"
         B --> G[値を返さない<br>アクションを実行];
         D --> H[値を返す<br>結果に評価される];
     end
-    I["`x + 1;` (セミコロンあり)"] -- セミコロンで --> B;
+    I["x + 1; (セミコロンあり)"] -- セミコロンで --> B;
 ```
 
 ## 5.4 関数の戻り値：`return` vs 式

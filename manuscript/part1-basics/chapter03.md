@@ -57,12 +57,12 @@ fn main() {
 
 ```mermaid
 graph TD
-    subgraph 変数宣言
+    subgraph "変数宣言"
         A(let x = 5) --> B{不変<br>Immutable};
         C(let mut y = 10) --> D{可変<br>Mutable};
     end
 
-    subgraph 操作
+    subgraph "操作"
         B --> E[x = 6<br>❌ コンパイルエラー];
         D --> F[y = 20<br>✅ OK];
     end

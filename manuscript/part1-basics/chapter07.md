@@ -108,7 +108,7 @@ fn main() {
 
 ```mermaid
 graph TD
-    subgraph "データ `s`"
+    subgraph "データ s"
         Data["String: \"hello\""]
     end
 
