@@ -57,13 +57,13 @@ fn main() {
 
 ```mermaid
 graph TD
-    A["`File::open()` の結果"] --> B{Result};
+    A["File::open() の結果"] --> B{Result};
     B -- 成功 --> C["Ok(file)"];
     B -- 失敗 --> D["Err(error)"];
 
     subgraph "match 式"
-        C --> E["`Ok(file) => ...` の処理"];
-        D --> F["`Err(error) => ...` の処理"];
+        C --> E["Ok(file) => ... の処理"];
+        D --> F["Err(error) => ... の処理"];
     end
 ```
 
