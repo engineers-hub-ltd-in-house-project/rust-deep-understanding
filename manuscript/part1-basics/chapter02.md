@@ -28,12 +28,12 @@ graph TD
     C --> B;
     C --> D[Crates.io];
 
-    subgraph Rust ツールチェーン
+    subgraph "Rust ツールチェーン"
         B(rustc<br>コンパイラ);
         C(cargo<br>ビルドツール &<br>パッケージマネージャ);
     end
 
-    subgraph 外部
+    subgraph "外部"
         D(Crates.io<br>公式パッケージレジストリ);
     end
 

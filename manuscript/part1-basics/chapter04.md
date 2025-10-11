@@ -48,7 +48,7 @@ Rust には 3 種類のループがあります。それぞれの目的と使い
 
 ```mermaid
 graph TD
-    subgraph ループの種類
+    subgraph "ループの種類"
         A[loop] --> B(無限ループ<br>break で値を返す);
         C[while] --> D(条件付きループ<br>条件が true の間繰り返す);
         E[for] --> F(コレクションループ<br>イテレータの各要素を処理);
