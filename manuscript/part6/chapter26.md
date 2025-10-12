@@ -1,146 +1,178 @@
-# 第 26 章：Web アプリケーション (Actix/Axum)
+# 第 26 章：実践プロジェクト：Web API サーバーの開発
 
 ## この章のゴール
-- `actix-web` または `axum` を使って、基本的な HTTP サーバーを起動できるようになる。
-- ルーティングを定義し、リクエストハンドラ関数を作成できる。
-- リクエストからパスパラメータ、クエリパラメータ、JSON ボディを抽出できるようになる。
-- JSON レスポンスをクライアントに返せるようになる。
-- アプリケーションの状態（例: DB 接続プール）をハンドラ間で共有する方法を理解する。
+- `axum` フレームワークを使い、基本的なJSON APIサーバーをゼロから構築できる。
+- `Router` を使って、HTTPメソッドとパスをリクエスト処理関数（ハンドラ）に紐付けることができる。
+- `Json`, `Path`, `State` といった `axum` のエクストラクタを使い、リクエストから型安全にデータを抽出できる。
+- `serde` を使って、リクエストボディのJSONをRustの構造体にデシリアライズし、レスポンスとして構造体をJSONにシリアライズできる。
+- `Arc<Mutex<T>>` を使って、複数のリクエストにまたがるアプリケーションの状態を安全に共有・変更できる。
 
-## 前章の復習
-前の章では、`clap` クレートを使って実践的な CLI ツールを開発しました。引数の解析、ファイル I/O、エラー処理といった、アプリケーション開発の基本を学びました。
+---
 
-## なぜこれが必要なのか？
-Web サービスや API は、現代のソフトウェア開発の中心的な要素です。Rust は、そのパフォーマンス、安全性、そして優れた非同期エコシステムにより、高速で信頼性の高い Web アプリケーションを構築するための強力な選択肢となっています。この章では、`tokio` 上に構築された人気の非同期 Web フレームワークである `actix-web` と `axum` を紹介し、簡単な Web API を作成するプロセスを体験します。
+## 26.1 なぜこれが必要か？ Rustによる高速・安全なWebサービス
 
-## `axum` vs `actix-web`
-- **`axum`:** `tokio` プロジェクトによってメンテナンスされている、比較的新しいフレームワーク。ミニマルでモジュール性が高く、特に `tower` エコシステムとの統合が強力です。関数のシグネチャを使ってリクエストを抽出する方法が非常に直感的です。
-- **`actix-web`:** 長い実績があり、非常に高速なことで知られるフレームワーク。アクターモデルに触発された設計が特徴ですが、必ずしもアクターを意識する必要はありません。
+CLIツールと並び、Webアプリケーション（特にバックエンドAPI）は、Rustの主要なユースケースの一つです。Rustの安全性、パフォーマンス、そして優れた非同期エコシステムは、高負荷なリクエストを効率的にさばき、メモリ安全性のバグをコンパイル時に排除できるため、信頼性の高いWebサービスを構築するのに非常に適しています。
 
-この章では、よりモダンで学習しやすい `axum` を中心に解説します。
+この章では、`tokio`エコシステムの一部であるモダンなWebフレームワーク `axum` を使って、ユーザー情報を管理するシンプルなJSON APIサーバーを構築します。
 
-## はじめての `axum` アプリケーション
+## 26.2 プロジェクトの準備と「Hello, World」
+
+`cargo new web-api-server` でプロジェクトを作成し、必要なクレートを `Cargo.toml` に追加します。
+
 ```toml
 # Cargo.toml
 [dependencies]
 axum = "0.7"
 tokio = { version = "1", features = ["full"] }
-```
-
-```rust
-use axum::{
-    routing::get,
-    Router,
-};
-use std::net::SocketAddr;
-
-#[tokio::main]
-async fn main() {
-    // ルーターを定義
-    let app = Router::new().route("/", get(handler));
-
-    // サーバーのアドレス
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
-    println!("listening on {}", addr);
-
-    // サーバーを起動
-    let listener = tokio::net::TcpListener::bind(addr).await.unwrap();
-    axum::serve(listener, app).await.unwrap();
-}
-
-// "GET /" へのリクエストを処理するハンドラ
-async fn handler() -> &'static str {
-    "Hello, World!"
-}
-```
-`cargo run` を実行し、ブラウザや `curl` で `http://127.0.0.1:3000` にアクセスすると、"Hello, World!" と表示されます。
-
-## ルーティングとハンドラ
-`Router::new().route("/path", method(handler))` の形式で、特定のパスと HTTP メソッドにハンドラ関数を紐付けます。
-
-### パスパラメータの抽出
-```rust
-use axum::extract::Path;
-
-async fn user_handler(Path(user_id): Path<u32>) -> String {
-    format!("Hello, user {}", user_id)
-}
-// Router::new().route("/users/:id", get(user_handler));
-```
-`axum` は、ハンドラの引数の型 (`Path<u32>`) を見て、リクエストのパスから `:id` の部分を `u32` として抽出し、`user_id` に束縛してくれます。この仕組みを **Extractor** と呼びます。
-
-### JSON の扱い
-`axum::Json` Extractor を使うと、JSON のリクエストボディをデシリアライズしたり、構造体を JSON レスポンスとしてシリアライズしたりすることが簡単にできます。これには `serde` クレートが必要です。
-```toml
-# Cargo.toml
-[dependencies]
-# ...
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 ```
 
+### 試してみよう：最初のサーバーを起動する
+
+まずは、最もシンプルなサーバーを起動してみましょう。`src/main.rs` を以下のように編集します。
+
 ```rust
-use axum::{extract::Json, http::StatusCode, response::IntoResponse};
-use serde::{Deserialize, Serialize};
-
-#[derive(Serialize, Deserialize)]
-struct User {
-    id: u64,
-    name: String,
-}
-
-// JSON ボディを受け取り、JSON を返すハンドラ
-async fn create_user(Json(payload): Json<User>) -> impl IntoResponse {
-    let new_user = User {
-        id: 1337,
-        name: payload.name,
-    };
-    (StatusCode::CREATED, Json(new_user))
-}
-```
-
-## 状態の共有
-データベース接続プールや設定情報など、複数のハンドラで共有したい状態は、`State` Extractor を使って渡します。
-```rust
-use axum::extract::State;
-use std::sync::Arc;
-
-// 共有したい状態
-struct AppState {
-    // ...
-}
+// src/main.rs
+use axum::{
+    routing::get,
+    Router,
+};
 
 #[tokio::main]
 async fn main() {
-    let shared_state = Arc::new(AppState { /* ... */ });
-    
-    let app = Router::new()
-        .route("/", get(handler))
-        .with_state(shared_state); // ルーターに状態を登録
-    
-    // ... サーバー起動 ...
+    // 1. ルーターを定義する
+    let app = Router::new().route("/", get(root));
+
+    // 2. サーバーを起動する
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await.unwrap();
+    println!("listening on {}", listener.local_addr().unwrap());
+    axum::serve(listener, app).await.unwrap();
 }
 
-async fn handler(State(state): State<Arc<AppState>>) {
-    // ハンドラ内で共有状態にアクセス
+// 3. ルートパス ("/") へのGETリクエストを処理するハンドラ
+async fn root() -> &'static str {
+    "Hello, World!"
 }
 ```
-状態は `Arc` でラップするのが一般的です。`axum` がリクエストごとに状態をクローンするためです。
+`cargo run` で実行し、`curl http://127.0.0.1:3000` を別のターミナルで実行すると、"Hello, World!" が返ってきます。
 
-## エラーハンドリング
-ハンドラから `Result` を返すことで、エラー処理を簡単に行うことができます。`Result` の `Err` ヴァリアントは、`IntoResponse` トレイトを実装している必要があります。これにより、エラーを適切な HTTP ステータスコードとレスポンスボディに変換できます。
+## 26.3 JSON APIの構築
 
-## 練習問題
-### 問題 1: TODO リスト API
-インメモリの `HashMap` を状態として共有し、以下のエンドポイントを持つ簡単な TODO リスト API を作成してください。
-- `GET /todos`: すべての TODO をリストする
-- `POST /todos`: 新しい TODO を作成する
+次に、ユーザーを作成・取得するAPIを実装していきます。
 
-## この章のまとめ
-- `axum` は、`tokio` 上に構築されたモダンで使いやすい Web フレームワーク。
-- ルーターを使って、パスと HTTP メソッドをハンドラ関数に紐付ける。
-- Extractor (`Path`, `Query`, `Json`, `State`) は、関数のシグネチャを元にリクエストからデータを直感的に抽出する強力な仕組み。
-- `Arc` を使ってアプリケーションの状態を定義し、`with_state` でルーターに登録することで、ハンドラ間で安全に共有できる。
+### 試してみよう：JSONの送受信と状態共有
 
-## 次の章へ
-Web アプリケーションでは、データベースとのやり取りだけでなく、ファイルシステムからのデータの読み書きも頻繁に発生します。次の章では、Rust でのデータ処理とファイル I/O について、より詳しく掘り下げていきます。
+まず、ユーザーを表す `User` 構造体と、ユーザー作成時のリクエストボディを表す `CreateUser` 構造体を定義します。`serde` の `Serialize`/`Deserialize` を `derive` することに注意してください。
+
+次に、ユーザーデータを保存するための「データベース」として、インメモリの `HashMap` を使います。これを複数のリクエストで共有するために `Arc<Mutex<...>>` でラップし、`axum` の `State` エクストラクタでハンドラに渡します。
+
+```rust
+// src/main.rs
+use axum::{
+    extract::{Path, State},
+    http::StatusCode,
+    response::Json,
+    routing::{get, post},
+    Router,
+};
+use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
+
+#[tokio::main]
+async fn main() {
+    // アプリケーションの状態：インメモリのシンプルなDB
+    let db = Arc::new(Mutex::new(HashMap::new()));
+
+    let app = Router::new()
+        .route("/users", post(create_user))
+        .route("/users/:id", get(get_user))
+        // .with_state() でルーターに状態を渡す
+        .with_state(db);
+
+    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await.unwrap();
+    println!("listening on {}", listener.local_addr().unwrap());
+    axum::serve(listener, app).await.unwrap();
+}
+
+// 共有する状態の型エイリアス
+type Db = Arc<Mutex<HashMap<u64, User>>>;
+
+#[derive(Debug, Serialize, Clone)]
+struct User {
+    id: u64,
+    username: String,
+}
+
+#[derive(Debug, Deserialize)]
+struct CreateUser {
+    username: String,
+}
+
+// POST /users: ユーザーを作成するハンドラ
+async fn create_user(
+    // Stateエクストラクタで共有状態を受け取る
+    State(db): State<Db>,
+    // Jsonエクストラクタでリクエストボディをデシリアライズ
+    Json(payload): Json<CreateUser>,
+) -> (StatusCode, Json<User>) {
+    let mut db_lock = db.lock().unwrap();
+    let id = db_lock.keys().max().unwrap_or(&0) + 1;
+    let user = User {
+        id,
+        username: payload.username,
+    };
+    db_lock.insert(id, user.clone());
+
+    (StatusCode::CREATED, Json(user))
+}
+
+// GET /users/:id: ユーザーを取得するハンドラ
+async fn get_user(
+    State(db): State<Db>,
+    // Pathエクストラクタでパスパラメータを受け取る
+    Path(id): Path<u64>,
+) -> Result<Json<User>, StatusCode> {
+    let db_lock = db.lock().unwrap();
+    if let Some(user) = db_lock.get(&id) {
+        Ok(Json(user.clone()))
+    } else {
+        Err(StatusCode::NOT_FOUND)
+    }
+}
+```
+
+### APIのテスト
+
+`cargo run` でサーバーを起動し、`curl` で動作を確認してみましょう。
+
+```bash
+# ユーザー "alice" を作成
+$ curl -X POST -H "Content-Type: application/json" -d '{"username": "alice"}' http://127.0.0.1:3000/users
+# {"id":1,"username":"alice"}
+
+# ユーザー "bob" を作成
+$ curl -X POST -H "Content-Type: application/json" -d '{"username": "bob"}' http://127.0.0.1:3000/users
+# {"id":2,"username":"bob"}
+
+# ID 1 のユーザーを取得
+$ curl http://127.0.0.1:3000/users/1
+# {"id":1,"username":"alice"}
+
+# 存在しないユーザーを取得
+$ curl -i http://127.0.0.1:3000/users/99
+# HTTP/1.1 404 Not Found
+# ...
+```
+
+## 26.4 まとめ
+
+- `axum` は、ハンドラ関数のシグネチャ（引数と戻り値の型）を見るだけで、リクエストからデータを抽出し、レスポンスを構築する、直感的で型安全なWebフレームワーク。
+- `Json<T>` エクストラクタと `serde` の組み合わせにより、JSONのシリアライズ・デシリアライズが簡単に行える。
+- `Path<T>` エクストラクタは、URLのパスから動的な値を型安全に抽出する。
+- `State<T>` エクストラクタと `Arc<Mutex<T>>` パターンは、複数のリクエストをまたいでアプリケーションの状態を安全に共有するための標準的な方法。
+
+---
+
+次の章では、Rustでのデータ処理とファイルI/Oについて、より詳しく掘り下げていきます。

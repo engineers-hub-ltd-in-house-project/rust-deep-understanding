@@ -1,54 +1,77 @@
-# 第 14 章：トレイトシステム入門
+# 第 14 章：トレイト入門
 
 ## この章のゴール
-- トレイトが共有の振る舞いを定義するためのものであることを理解する。
-- 構造体や列挙型にトレイトを実装できるようになる。
+- コードの重複という具体的な問題に対し、トレイトがどのように解決策となるかを説明できる。
+- `trait` を定義し、複数の異なる構造体に実装できる。
+- `impl Trait` 構文を使い、トレイトを実装したあらゆる型を引数に取るジェネリックな関数を書ける。
 - デフォルト実装を持つトレイトメソッドを定義・利用できる。
-- 関数や構造体のジェネリクスでトレイト境界を指定できるようになる。
 
-## 前章の復習
-前の章ではイテレータについて学び、コレクションを効率的かつ宣言的に操作する方法を習得しました。`map` や `filter` といったメソッドチェーンがいかにコードの可読性を高めるかを見てきました。
+---
 
-## なぜこれが必要なのか？
-異なる型であっても、共通の振る舞い（例えば、画面に表示する、要約を生成するなど）を持たせたい場合があります。トレイトは、このような共有の振る舞いを定義するための Rust の仕組みです。これにより、コードの再利用性が高まり、柔軟な設計が可能になります。
+## 14.1 問題設定：異なる型に共通の振る舞いをさせたい
 
-## Python/Go ではこうやっていた
-- **Python:** ダックタイピングが主流で、特定のメソッド（例: `__str__`）を持っていれば、そのオブジェクトは特定の振る舞いを持つとみなされました。ABC (抽象基底クラス) や `Protocol` を使って、より明示的にインターフェースを定義することもできました。
-- **Go:** `interface` を使ってメソッドのシグネチャを定義しました。ある型がインターフェースのすべてのメソッドを実装していれば、その型は暗黙的にそのインターフェースを満たすと見なされました。
+これまでに、`struct` や `enum` を使って独自の型を定義してきました。しかし、異なる型だけれども、どこか似たような振る舞いをさせたい場合はどうすればよいでしょうか？
 
-## Rust ではこう書く: トレイト
-Rust のトレイトは Go のインターフェースに似ていますが、実装は**明示的**に行う必要があります。
+例えば、SNSアプリケーションを考えてみましょう。タイムラインには、ニュース記事と個人のツイートの両方が流れてくるとします。どちらも「要約を表示する」という共通の機能が必要です。
 
-### トレイトの定義
-`trait` キーワードを使って、共有したいメソッドのシグネチャを定義します。
+`cargo new traits` でプロジェクトを作り、この問題を素朴に実装してみましょう。
+
 ```rust
-pub trait Summary {
-    fn summarize(&self) -> String;
-}
-```
-ここでは `summarize` というメソッドを定義しました。このメソッドは `&self` を引数に取り、`String` を返します。
+// src/main.rs
 
-### 型へのトレイトの実装
-`impl Trait for Type` という構文で、特定の型に対してトレイトを実装します。
-```rust
 pub struct NewsArticle {
     pub headline: String,
-    pub location: String,
     pub author: String,
-    pub content: String,
-}
-
-impl Summary for NewsArticle {
-    fn summarize(&self) -> String {
-        format!("{}, by {} ({})", self.headline, self.author, self.location)
-    }
 }
 
 pub struct Tweet {
     pub username: String,
     pub content: String,
-    pub reply: bool,
-    pub retweet: bool,
+}
+
+// ニュース記事を要約する関数
+fn summarize_article(article: &NewsArticle) -> String {
+    format!("{}, by {}", article.headline, article.author)
+}
+
+// ツイートを要約する関数
+fn summarize_tweet(tweet: &Tweet) -> String {
+    format!("{}: {}", tweet.username, tweet.content)
+}
+
+fn main() {
+    let tweet = Tweet {
+        username: String::from("horse_ebooks"),
+        content: String::from("of course, as you probably already know, people"),
+    };
+    println!("1 new tweet: {}", summarize_tweet(&tweet));
+}
+```
+これでも動きますが、大きな問題があります。
+- **コードの重複**: `summarize_...` という似たような関数が型の数だけ増えていきます。
+- **拡張性の欠如**: タイムラインに新しい種類のアイテム（例えばブログ投稿）を追加するたびに、新しい `summarize_...` 関数を作り、タイムラインを表示するロジックも修正しなければなりません。
+
+この問題をエレガントに解決するのが **トレイト (Trait)** です。
+
+## 14.2 解決策：`trait` で振る舞いを定義する
+
+トレイトは、Goのインターフェースのように、特定の型が持つべき共通の振る舞いを定義します。
+
+まず、`Summary` というトレイトを定義しましょう。これには `summarize` というメソッドのシグネチャ（型定義）が含まれます。
+
+```rust
+pub trait Summary {
+    fn summarize(&self) -> String;
+}
+```
+
+次に、このトレイトを各構造体に実装 (`impl`) します。
+
+```rust
+impl Summary for NewsArticle {
+    fn summarize(&self) -> String {
+        format!("{}, by {}", self.headline, self.author)
+    }
 }
 
 impl Summary for Tweet {
@@ -57,16 +80,48 @@ impl Summary for Tweet {
     }
 }
 ```
-これで `NewsArticle` と `Tweet` の両方が `summarize` メソッドを持つようになり、`Summary` トレイトを満たす型として扱えるようになりました。
+`impl Summary for NewsArticle` という構文は、「`NewsArticle` 型のために `Summary` トレイトを実装します」と読んでください。
 
-### デフォルト実装
-トレイトのメソッドには、デフォルトの振る舞いを実装しておくことができます。これにより、実装する型側でメソッドをオーバーライドしない限り、このデフォルトの振る舞いが使われます。
+これで、`NewsArticle` と `Tweet` は、どちらも `Summary` トレイトの振る舞いを持つ型となりました。
+
+### 試してみよう：トレイトの力
+
+トレイトを実装したことで、これらの型を抽象的に扱えるようになります。`impl Trait` 構文を使うと、「`Summary` トレイトを実装している任意の型」を引数に取る関数を定義できます。
+
+```rust
+// `item` は `Summary` トレイトを実装した任意の型の不変参照
+pub fn notify(item: &impl Summary) {
+    println!("Breaking news! {}", item.summarize());
+}
+
+fn main() {
+    let tweet = Tweet {
+        username: String::from("horse_ebooks"),
+        content: String::from("of course, as you probably already know, people"),
+    };
+
+    let article = NewsArticle {
+        headline: String::from("Penguins win the Stanley Cup Championship!"),
+        author: String::from("Iceburgh"),
+    };
+
+    // notify 関数は Tweet と NewsArticle の両方を受け取れる！
+    notify(&tweet);
+    notify(&article);
+}
+```
+`summarize_tweet` と `summarize_article` という個別の関数はもう必要ありません。`notify` 関数は、`summarize` メソッドを持つ型なら何でも受け取ってくれます。これがトレイトによる **ポリモーフィズム（多態性）** です。新しいアイテム（ブログ投稿など）を追加したくなったら、その構造体に `Summary` トレイトを実装するだけで、`notify` 関数はそのまま再利用できます。
+
+## 14.3 デフォルト実装
+
+トレイトのメソッドには、デフォルトの振る舞いを実装しておくこともできます。これにより、実装する型側でメソッドをオーバーライドしない限り、このデフォルトの振る舞いが使われます。
+
 ```rust
 pub trait Summary {
     fn summarize_author(&self) -> String;
 
+    // デフォルト実装を持つメソッド
     fn summarize(&self) -> String {
-        // デフォルト実装
         format!("(Read more from {}...)", self.summarize_author())
     }
 }
@@ -77,40 +132,19 @@ impl Summary for Tweet {
         format!("@{}", self.username)
     }
 }
-// この Tweet インスタンスはデフォルトの summarize メソッドを使える
+
+// main 関数で tweet.summarize() を呼ぶと、デフォルト実装が使われる
+// -> "(Read more from @horse_ebooks...)"
 ```
+`Tweet` の `impl` ブロックでは `summarize` を定義していませんが、トレイトのデフォルト実装が利用できます。ただし、デフォルト実装は、同じトレイト内の他のメソッド（この場合は`summarize_author`）を呼び出すことができますが、その逆はできません。
 
-### トレイトを引数に取る
-トレイトを関数の引数として使うことで、そのトレイトを実装している任意の型を受け取ることができます。これを**トレイト境界**と呼びます。
-```rust
-// `item` は Summary トレイトを実装した任意の型
-pub fn notify(item: &impl Summary) {
-    println!("Breaking news! {}", item.summarize());
-}
-```
-この `notify` 関数は、`NewsArticle` のインスタンスも `Tweet` のインスタンスも、どちらも引数として受け取ることができます。
+## 14.4 まとめ
 
-## よくあるエラーと対処法
-### エラー 1: `the trait bound ... is not satisfied`
-**原因:** トレイト境界を持つ関数に、そのトレイトを実装していない型の値を渡そうとしました。
-**解決法:** 渡そうとしている型に、必要なトレイトを `impl` ブロックを使って実装してください。
+- トレイトは、異なる型に共通の振る舞いを定義するための仕組みで、Go のインターフェースに似ている。
+- `trait` キーワードで定義し、`impl Trait for Type` で明示的に実装する。
+- `impl Trait` 構文を使うと、トレイトを実装した型を関数の引数として抽象的に受け取れる。これにより、コードの再利用性が劇的に向上する。
+- デフォルト実装を提供することで、トレイト実装の手間を省いたり、共通の振る舞いを提供したりできる。
 
-## 練習問題
-### 問題 1: `Display` トレイトの実装
-`Point` という構造体を定義し、座標を `(x, y)` の形式で表示できるように、標準ライブラリの `std::fmt::Display` トレイトを実装してください。
-```rust
-struct Point {
-    x: i32,
-    y: i32,
-}
-// ここに Display トレイトを実装する
-```
+---
 
-## この章のまとめ
-- トレイトは、異なる型に共通の振る舞いを定義するための仕組み。
-- `trait` キーワードで定義し、`impl Trait for Type` で実装する。
-- デフォルト実装を提供することで、実装の手間を省ける場合がある。
-- `impl Trait` 構文を使って、トレイトを実装した型を関数の引数として受け取れる (トレイト境界)。
-
-## 次の章へ
-トレイトは、特定の型だけでなく、あらゆる型に対して汎用的なコードを書くための「ジェネリクス」と組み合わせることで、その真価を発揮します。次の章では、ジェネリクスと、より複雑なトレイト境界について学びます。
+トレイトは、Rustの型システムの心臓部とも言える機能です。次の章では、トレイトと並ぶもう一つの重要な抽象化機能、「ジェネリクス」と、この2つを組み合わせた「トレイト境界」について学びます。

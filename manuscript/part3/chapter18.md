@@ -1,131 +1,135 @@
-# 第 18 章：内部可変性 (RefCell, Mutex)
+# 第 18 章：共有所有と内部可変性 `Rc<T>` と `RefCell<T>`
 
 ## この章のゴール
-- 「内部可変性」が、不変な参照 (`&T`) を通してデータを変更するデザインパターンであることを理解する。
-- `RefCell<T>` を使って、単一スレッド内で実行時に借用規則をチェックし、内部可変性を実現できるようになる。
-- `Mutex<T>` を使って、複数スレッド間で排他制御を行い、共有データを安全に変更できるようになる。
-- `RefCell` と `Mutex` の使い分けを説明できる。
+- `Box<T>` の単一所有権では表現できないデータ構造（例：グラフ）を示し、`Rc<T>` による共有所有の必要性を説明できる。
+- `Rc::clone` と `Rc::strong_count` を使い、参照カウントがどのように機能するかを追体験する。
+- 共有されたデータを変更しようとするとコンパイルエラーになることを体験し、「内部可変性」の必要性を説明できる。
+- `RefCell<T>` の `.borrow_mut()` を使って共有データを変更し、意図的に借用ルールを破って実行時パニックを引き起こせる。
 
-## 前章の復習
-前の章では、`Box`, `Rc`, `Arc` といったスマートポインタを学びました。これらにより、ヒープへのデータ確保や、複数の所有者を持つといった、より柔軟な所有権のパターンを安全に扱えるようになりました。
+---
 
-## なぜこれが必要なのか？
-Rust の借用規則は非常に厳格です。「一つの可変参照 (`&mut T`) か、複数の不変参照 (`&T`) のどちらか一方しか存在できない」というルールがコンパイル時に強制されることで、多くのバグを防いでいます。
+## 18.1 問題設定(1)：所有者が一人では困る場面
 
-しかし、時にはこのルールが厳しすぎることがあります。例えば、あるデータ構造に対して不変の参照しか持っていないけれど、その内部の一部だけをロギングやキャッシュのために変更したい、といったケースです。
+前の章で学んだ `Box<T>` は、データに対する **唯一の** 所有権を表現するのに非常に便利です。しかし、時には複数の所有者が必要になる場合があります。
 
-このような場合に、「コンパイル時の借用チェックを回避し、実行時にチェックする」ことで、不変参照の裏でデータを可変にするパターン、それが**内部可変性 (Interior Mutability)** です。
+例えば、`Cons` リストで、2つの異なるリストが同じ後続リストを共有するケースを考えてみましょう。
 
-## `RefCell<T>`: シングルスレッドでの内部可変性
-`RefCell<T>` は、単一スレッド内で内部可変性を実現するためのスマートポインタです。`RefCell<T>` は、コンパイル時ではなく**実行時**に借用規則をチェックします。もし規則違反（例えば、既に可変借用されているのに、さらに可変借用しようとする）があれば、プログラムはパニックします。
+`cargo new rc_refcell` でプロジェクトを作り、試してみましょう。
 
-`RefCell` は、不変な `&self` を受け取るメソッド内で、フィールドの値を変更したい場合などによく使われます。
 ```rust
-use std::cell::RefCell;
-
-pub trait Messenger {
-    fn send(&self, msg: &str);
+// src/main.rs
+enum List {
+    Cons(i32, Box<List>),
+    Nil,
 }
 
-pub struct LimitTracker<'a, T: Messenger> {
-    messenger: &'a T,
-    value: usize,
-    max: usize,
-    // RefCell を使って、send メソッドが &self でも内部のベクタを変更できるようにする
-    sent_messages: RefCell<Vec<String>>,
-}
-
-impl<'a, T> LimitTracker<'a, T>
-    where T: Messenger,
-{
-    // ... new ...
-
-    pub fn set_value(&mut self, value: usize) {
-        self.value = value;
-        // ...
-        if percentage >= 1.0 {
-            // send は &self を取るが、内部で sent_messages を変更したい
-            self.messenger.send("Error: You are over your quota!");
-        }
-        // ...
-    }
-}
-
-// テスト用のモックオブジェクト
-struct MockMessenger {
-    // RefCell を使って、send メソッドが &self でも内部のベクタを変更できるようにする
-    sent_messages: RefCell<Vec<String>>,
-}
-
-impl MockMessenger {
-    fn new() -> MockMessenger {
-        MockMessenger { sent_messages: RefCell::new(vec![]) }
-    }
-}
-
-impl Messenger for MockMessenger {
-    fn send(&self, message: &str) {
-        // .borrow_mut() で可変参照を "借りる"
-        // 実行時に借用規則がチェックされる
-        self.sent_messages.borrow_mut().push(String::from(message));
-    }
-}
-```
-`Rc<T>` と `RefCell<T>` を組み合わせる (`Rc<RefCell<T>>`) ことで、複数の所有者を持ち、かつ内部の値を変更できるオブジェクトを作ることができます。これは非常に強力なパターンです。
-
-## `Mutex<T>`: マルチスレッドでの内部可変性
-`Mutex<T>` (Mutual Exclusion) は、複数スレッド間で共有されたデータを安全に変更するための仕組みです。`Mutex` は、一度に一つのスレッドしかデータへのアクセス（ロック）を許可しません。他のスレッドがアクセスしようとした場合、ロックが解放されるまで待機（ブロック）させられます。
-
-前章で見た `Arc<T>` と組み合わせる (`Arc<Mutex<T>>`) のが、スレッド間で状態を共有するための最も一般的な方法です。
-```rust
-use std::sync::{Arc, Mutex};
-use std::thread;
+use List::{Cons, Nil};
 
 fn main() {
-    // Arc<Mutex<i32>> でカウンターをラップする
-    let counter = Arc::new(Mutex::new(0));
-    let mut handles = vec![];
-
-    for _ in 0..10 {
-        let counter = Arc::clone(&counter);
-        let handle = thread::spawn(move || {
-            // .lock() でロックを取得する
-            // ロックが取得できるまでこのスレッドは待機する
-            // .unwrap() はロック取得に失敗した場合（他のスレッドがパニックしたなど）にパニックする
-            let mut num = counter.lock().unwrap();
-
-            *num += 1;
-        }); // MutexGuard (num) はここでスコープを抜けるので、ロックが自動的に解放される
-        handles.push(handle);
-    }
-
-    for handle in handles {
-        handle.join().unwrap();
-    }
-
-    println!("Result: {}", *counter.lock().unwrap()); // => 10
+    let a = Cons(5, Box::new(Cons(10, Box::new(Nil))));
+    // `a` の一部を共有したい
+    let b = Cons(3, Box::new(a)); // `a` は `b` にムーブされる
+    let c = Cons(4, Box::new(a)); // エラー！ `a` は既にムーブされている
 }
 ```
-`.lock()` は `MutexGuard` というスマートポインタを返します。このガードがスコープを抜けるときに自動的にロックが解放されるため（RAII）、ロックの解放し忘れを防ぐことができます。
+`a` は `b` を作った時点で所有権がムーブされてしまうため、`c` で再び `a` を使おうとするとコンパイルエラーになります。これを解決するのが **`Rc<T>` (Reference Counting)** です。
 
-## `RefCell` vs `Mutex`
-| 特徴 | `RefCell<T>` | `Mutex<T>` |
-|---|---|---|
-| **利用シーン** | シングルスレッド | マルチスレッド |
-| **オーバーヘッド** | 低い（スレッド同期なし） | 高い（アトミック操作、スレッド待機） |
-| **違反時の挙動** | 実行時にパニック | スレッドをブロック（待機）させる |
-| **スレッドセーフ** | No (`Send` を実装しない) | Yes (`Send` を実装する) |
+## 18.2 解決策(1)：`Rc<T>` で所有権を共有する
 
-## よくあるエラーと対処法
-### エラー 1: `already borrowed: BorrowMutError`
-**原因:** `RefCell` に対して、既に借用（不変または可変）が存在する状態で、互換性のない新しい借用（例: 可変借用中にさらに可変借用）をしようとしました。
-**解決法:** コードのロジックを見直し、`borrow()` や `borrow_mut()` で得られたガードのスコープが、必要以上に長くなっていないか確認してください。
+`Rc<T>` は、単一スレッド内で、あるデータに対する複数の所有者を可能にするスマートポインタです。`Rc<T>` は、自身が何回クローンされたかを常にカウントしており（参照カウント）、このカウントがゼロになった時に初めてヒープ上のデータを解放します。
 
-## この章のまとめ
+### 試してみよう：参照カウントを可視化する
+
+`Rc::clone()` は、データのディープコピーではなく、ポインタをコピーして参照カウントを1増やすだけの軽量な操作です。その様子を `Rc::strong_count` で観察してみましょう。
+
+```rust
+use std::rc::Rc;
+
+enum List {
+    Cons(i32, Rc<List>),
+    Nil,
+}
+
+use List::{Cons, Nil};
+
+fn main() {
+    let a = Rc::new(Cons(5, Rc::new(Cons(10, Rc::new(Nil)))));
+    println!("Count after creating a = {}", Rc::strong_count(&a)); // => 1
+
+    // `Rc::clone` を使う。`a.clone()` と書いても同じ。
+    let b = Cons(3, Rc::clone(&a));
+    println!("Count after creating b = {}", Rc::strong_count(&a)); // => 2
+
+    {
+        let c = Cons(4, Rc::clone(&a));
+        println!("Count after creating c = {}", Rc::strong_count(&a)); // => 3
+    } // `c` がスコープを抜けるとカウントが減る
+
+    println!("Count after c goes out of scope = {}", Rc::strong_count(&a)); // => 2
+}
+```
+`Rc<T>` を使うことで、`a` の所有権をムーブさせることなく、複数のリストで安全に共有することができました。
+
+## 18.3 問題設定(2)：共有しているデータを変更したい！
+
+`Rc<T>` でデータの共有はできましたが、`Rc<T>` が保持する値は不変です。もし共有している値を後から変更したくなったらどうなるでしょうか？
+
+```rust
+use std::rc::Rc;
+let shared_value = Rc::new(5);
+let mut mut_ref = shared_value.as_mut(); // エラー！
+*mut_ref = 10;
+```
+`Rc<T>` は複数の不変参照 (`&T`) を配ることはできますが、可変参照 (`&mut T`) を得ることはできません。もしできてしまうと、複数の場所から同時にデータを変更できてしまい、借用規則に違反するからです。
+
+ここで登場するのが **「内部可変性 (Interior Mutability)」** というデザインパターンと、それを実現する **`RefCell<T>`** です。
+
+## 18.4 解決策(2)：`RefCell<T>` で内部可変性を実現する
+
+`RefCell<T>` は、コンパイル時ではなく **実行時** に借用規則をチェックするスマートポインタです。これにより、不変に見える値の「内部」を可変にすることができます。
+
+- `borrow()`: 不変参照 `&T` に相当する `Ref<T>` を返す。
+- `borrow_mut()`: 可変参照 `&mut T` に相当する `RefMut<T>` を返す。
+
+`Rc<T>` と `RefCell<T>` を組み合わせた `Rc<RefCell<T>>` は、**複数の所有者を持ち、かつ内部の値を変更できる** オブジェクトを作るための非常に強力なパターンです。
+
+### 試してみよう：実行時パニックを体験する
+
+`RefCell<T>` は借用規則をコンパイル時に素通ししますが、実行時に監視しています。もしルールを破れば、プログラムは即座に **パニック** します。
+
+```rust
+use std::rc::Rc;
+use std::cell::RefCell;
+
+fn main() {
+    let shared_value = Rc::new(RefCell::new(5));
+
+    let a = Rc::clone(&shared_value);
+    let b = Rc::clone(&shared_value);
+
+    // 最初の可変借用は成功する
+    let mut b_mut = b.borrow_mut();
+    *b_mut += 10;
+    println!("b_mut: {}", b_mut);
+
+    // 同じスコープ内で、さらに可変借用しようとすると...
+    let mut a_mut = a.borrow_mut(); // 💥 パニック！
+    // thread 'main' panicked at 'already borrowed: BorrowMutError'
+
+    *a_mut += 5;
+    println!("a_mut: {}", a_mut);
+}
+```
+`b_mut` という可変借用が存在するスコープで、`a.borrow_mut()` を呼び出したため、実行時エラーが発生しました。これは、コンパイラが見逃した借用規則違反を、`RefCell` が実行時に捕まえてくれた結果です。
+
+## 18.5 まとめ
+
+- `Rc<T>` は、単一スレッドでデータへの複数の所有権（共有所有）を可能にする。参照カウントで寿命を管理する。
 - 内部可変性は、不変な参照の裏でデータを変更するためのデザインパターン。
-- `RefCell<T>` は、単一スレッドで、実行時借用チェックによる内部可変性を提供する。
-- `Mutex<T>` は、マルチスレッドで、ロックによる排他制御を通じて内部可変性を提供する。
-- `Arc<Mutex<T>>` は、スレッド間で共有状態を安全に変更するためのイディオム。
+- `RefCell<T>` は、実行時に借用チェックを行うことで内部可変性を提供する。
+- `RefCell<T>` の借用規則を破ると、コンパイルエラーの代わりに **実行時パニック** が発生する。
+- `Rc<RefCell<T>>` は、複数の所有者がいて、かつ値を変更できるデータ構造を作るための一般的なイディオム。
 
-## 次の章へ
-第3部では、Rust の抽象化機能について深く見てきました。これにより、再利用可能で柔軟なコードを書くための強力なツールを手に入れました。次の第4部では、視点を変えて、プロジェクトが大きくなるにつれて重要になる「プロジェクト管理」と「テスト」について学びます。まずは、コードを整理するためのモジュールシステムから始めましょう。
+---
+
+次の部では、視点を変えて、プロジェクトが大きくなるにつれて重要になる「プロジェクト管理」と「テスト」について学びます。まずは、コードを整理するためのモジュールシステムから始めましょう。
