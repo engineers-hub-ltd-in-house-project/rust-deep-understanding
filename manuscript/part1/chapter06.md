@@ -22,9 +22,9 @@ Rust は、これらとは全く異なる第 3 のアプローチを取ります
 ```mermaid
 graph TD
     subgraph "メモリ管理"
-        A[手動管理<br>(C/C++)] --> B{パフォーマンス: ◎<br>安全性: △};
-        C[ガベージコレクション<br>(Python/Go)] --> D{パフォーマンス: ◯<br>安全性: ◎};
-        E[所有権<br>(Rust)] --> F{パフォーマンス: ◎<br>安全性: ◎};
+        A["手動管理<br>(C/C++)"] --> B("パフォーマンス: ◎<br>安全性: △");
+        C["ガベージコレクション<br>(Python/Go)"] --> D("パフォーマンス: ◯<br>安全性: ◎");
+        E["所有権<br>(Rust)"] --> F("パフォーマンス: ◎<br>安全性: ◎");
     end
 ```
 
@@ -124,11 +124,11 @@ error[E0382]: borrow of moved value: `s1`
 ```mermaid
 graph TD
     subgraph "Before Move: let s1 = String::from(\"hello\");"
-        Stack1[Stack: s1<br>(ptr, len: 5, cap: 5)] --> Heap1[Heap: "hello"];
+        Stack1["Stack: s1<br>(ptr, len: 5, cap: 5)"] --> Heap1[Heap: "hello"];
     end
     subgraph "After Move: let s2 = s1;"
-        Stack1_Moved[Stack: s1<br><font color=red>INVALID</font>]
-        Stack2[Stack: s2<br>(ptr, len: 5, cap: 5)] --> Heap1
+        Stack1_Moved["Stack: s1<br>INVALID"]
+        Stack2["Stack: s2<br>(ptr, len: 5, cap: 5)"] --> Heap1
     end
 ```
 
