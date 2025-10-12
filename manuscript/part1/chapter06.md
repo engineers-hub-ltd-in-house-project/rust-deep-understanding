@@ -184,6 +184,19 @@ fn main() {
 [Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20main()%20%7B%0A%20%20%20%20let%20s1%20%3D%20String%3A%3Afrom(%22hello%22)%3B%0A%20%20%20%20let%20s2%20%3D%20s1.clone()%3B%0A%0A%20%20%20%20println!(%22s1%20%3D%20%7B%7D%2C%20s2%20%3D%20%7B%7D%22%2C%20s1%2C%20s2)%3B%0A%7D)
 このコードは問題なく動作します。`s1.clone()` はヒープ上の `"hello"` というデータも複製し、全く新しい `String` を作成するため、`s1` と `s2` はそれぞれ別のデータを所有することになります。
 
+`clone()` の挙動を図で見てみましょう。
+
+```mermaid
+graph TD
+    subgraph "Before Clone: let s1 = String::from(&quot;hello&quot;);"
+        Stack1["Stack: s1<br>(ptr_A, len: 5, cap: 5)"] --> Heap1["Heap (Addr A): &quot;hello&quot;"];
+    end
+    subgraph "After Clone: let s2 = s1.clone();"
+        Stack1_After["Stack: s1<br>(ptr_A, len: 5, cap: 5)"] --> Heap1_After["Heap (Addr A): &quot;hello&quot;"];
+        Stack2["Stack: s2<br>(ptr_B, len: 5, cap: 5)"] --> Heap2["Heap (Addr B): &quot;hello&quot;"];
+    end
+```
+
 ## 6.6 関数と所有権
 
 関数に値を渡したり、関数から値を返したりする際にも、所有権のルールは同じように適用されます。
