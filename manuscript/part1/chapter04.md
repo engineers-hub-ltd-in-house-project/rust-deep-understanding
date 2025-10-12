@@ -33,6 +33,7 @@ fn main() {
     println!("The value of number is: {}", number);
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20main%28%29%20%7B%0A%20%20%20%20let%20condition%20%3D%20true%3B%0A%20%20%20%20let%20number%20%3D%20if%20condition%20%7B%205%20%7D%20else%20%7B%206%20%7D%3B%0A%0A%20%20%20%20println%21%28%22The%20value%20of%20number%20is%3A%20%7B%7D%22%2C%20number%29%3B%0A%7D)
 
 結果として `5` が表示されたはずです。`if condition { 5 } else { 6 }` の部分全体が評価され、`condition` が `true` だったので `5` という値を返しました。その結果が `number` という変数に束縛されたのです。
 
@@ -54,6 +55,7 @@ fn main() {
     println!("The value of number is: {}", number);
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20main%28%29%20%7B%0A%20%20%20%20let%20condition%20%3D%20true%3B%0A%20%20%20%20//%20%E2%9D%8C%20%E3%82%B3%E3%83%B3%E3%83%91%E3%82%A4%E3%83%AB%E3%82%A8%E3%83%A9%E3%83%BC%EF%BC%81%0A%20%20%20%20//%20%60if%60%20%E3%83%96%E3%83%AD%E3%83%83%E3%82%AF%E3%81%AF%E6%95%B4%E6%95%B0%E3%82%92%E3%80%81%60else%60%20%E3%83%96%E3%83%AD%E3%83%83%E3%82%AF%E3%81%AF%E6%96%87%E5%AD%97%E5%88%97%E3%82%92%E8%BF%94%E3%81%9D%E3%81%86%E3%81%A8%E3%81%97%E3%81%A6%E3%81%84%E3%82%8B%0A%20%20%20%20let%20number%20%3D%20if%20condition%20%7B%205%20%7D%20else%20%7B%20%22six%22%20%7D%3B%0A%0A%20%20%20%20println%21%28%22The%20value%20of%20number%20is%3A%20%7B%7D%22%2C%20number%29%3B%0A%7D)
 
 これを実行すると、`if` と `else` に `mismatched types` (型の不一致) があるとコンパイラが教えてくれます。
 
@@ -100,6 +102,7 @@ fn main() {
     println!("The result is {}", result); // => 20
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20main%28%29%20%7B%0A%20%20%20%20let%20mut%20counter%20%3D%200%3B%0A%0A%20%20%20%20let%20result%20%3D%20loop%20%7B%0A%20%20%20%20%20%20%20%20counter%20%2B%3D%201%3B%0A%0A%20%20%20%20%20%20%20%20if%20counter%20%3D%3D%2010%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20break%20counter%20%2A%202%3B%20//%20%E3%83%AB%E3%83%BC%E3%83%97%E3%82%92%E6%8A%9C%E3%81%91%E3%80%81%E5%80%A4%E3%82%92%E8%BF%94%E3%81%99%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%3B%0A%0A%20%20%20%20println%21%28%22The%20result%20is%20%7B%7D%22%2C%20result%29%3B%20//%20%3D%3E%2020%0A%7D)
 
 ### 2. `while`: 条件付きループ
 特定の条件が `true` である間、ループを継続します。Go には `while` がありませんでしたが、Python 経験者にはお馴染みでしょう。
@@ -116,6 +119,7 @@ fn main() {
     println!("LIFTOFF!!!");
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20main%28%29%20%7B%0A%20%20%20%20let%20mut%20number%20%3D%203%3B%0A%0A%20%20%20%20while%20number%20%21%3D%200%20%7B%0A%20%20%20%20%20%20%20%20println%21%28%22%7B%7D%21%22%2C%20number%29%3B%0A%20%20%20%20%20%20%20%20number%20-%3D%201%3B%0A%20%20%20%20%7D%0A%0A%20%20%20%20println%21%28%22LIFTOFF%21%21%21%22%29%3B%0A%7D)
 
 ### 3. `for`: コレクションループ
 Python の `for item in collection:` のように、配列やベクタなどのコレクションの各要素を順番に処理するのに最も適しています。安全でエラーが起きにくいため、最も一般的に使われるループです。
@@ -129,6 +133,7 @@ fn main() {
     }
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20main%28%29%20%7B%0A%20%20%20%20let%20a%20%3D%20%5B10%2C%2020%2C%2030%2C%2040%2C%2050%5D%3B%0A%0A%20%20%20%20for%20element%20in%20a%20%7B%0A%20%20%20%20%20%20%20%20println%21%28%22the%20value%20is%3A%20%7B%7D%22%2C%20element%29%3B%0A%20%20%20%20%7D%0A%7D)
 
 `for` ループは、`.rev()` メソッドを使って逆順にイテレートすることもできます。
 
@@ -138,6 +143,7 @@ for number in (1..4).rev() {
     println!("{}!", number);
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=//%203%2C%202%2C%201%2C%20LIFTOFF%21%21%21%20%E3%81%A8%E5%87%BA%E5%8A%9B%0Afor%20number%20in%20%281..4%29.rev%28%29%20%7B%0A%20%20%20%20println%21%28%22%7B%7D%21%22%2C%20number%29%3B%0A%7D)
 
 ## 4.4 Rust のスーパーパワー：`match`
 
@@ -172,6 +178,7 @@ fn main() {
     println!("Value: {}", value_in_cents(my_coin));
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=enum%20Coin%20%7B%0A%20%20%20%20Penny%2C%0A%20%20%20%20Nickel%2C%0A%20%20%20%20Dime%2C%0A%20%20%20%20Quarter%2C%0A%7D%0A%0Afn%20value_in_cents%28coin%3A%20Coin%29%20-%3E%20u8%20%7B%0A%20%20%20%20match%20coin%20%7B%0A%20%20%20%20%20%20%20%20Coin%3A%3APenny%20%3D%3E%201%2C%0A%20%20%20%20%20%20%20%20Coin%3A%3ANickel%20%3D%3E%205%2C%0A%20%20%20%20%20%20%20%20Coin%3A%3ADime%20%3D%3E%2010%2C%0A%20%20%20%20%20%20%20%20//%20%E3%82%8F%E3%81%96%E3%81%A8%20Quarter%20%E3%82%92%E3%82%B3%E3%83%A1%E3%83%B3%E3%83%88%E3%82%A2%E3%82%A6%E3%83%88%E3%81%97%E3%81%A6%E3%81%BF%E3%82%8B%0A%20%20%20%20%20%20%20%20//%20Coin%3A%3AQuarter%20%3D%3E%2025%2C%0A%20%20%20%20%7D%0A%7D%0A%0Afn%20main%28%29%20%7B%0A%20%20%20%20let%20my_coin%20%3D%20Coin%3A%3APenny%3B%0A%20%20%20%20println%21%28%22Value%3A%20%7B%7D%22%2C%20value_in_cents%28my_coin%29%29%3B%0A%7D)
 
 このコードで `cargo run` を実行すると、コンパイルエラーになります。
 
@@ -202,6 +209,7 @@ fn value_in_cents(coin: Coin) -> u8 {
     }
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20value_in_cents%28coin%3A%20Coin%29%20-%3E%20u8%20%7B%0A%20%20%20%20match%20coin%20%7B%0A%20%20%20%20%20%20%20%20Coin%3A%3APenny%20%3D%3E%201%2C%0A%20%20%20%20%20%20%20%20Coin%3A%3ANickel%20%3D%3E%205%2C%0A%20%20%20%20%20%20%20%20Coin%3A%3ADime%20%3D%3E%2010%2C%0A%20%20%20%20%20%20%20%20Coin%3A%3AQuarter%20%3D%3E%2025%2C%0A%20%20%20%20%7D%0A%7D)
 
 ## 4.5 `if let`：一つのパターンに注目する
 
@@ -216,6 +224,7 @@ match config_max {
     _ => (), // 他のケースは何もしない
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=let%20config_max%20%3D%20Some%283u8%29%3B%0A%0A//%20match%20%E3%82%92%E4%BD%BF%E3%81%A3%E3%81%9F%E5%A0%B4%E5%90%88%0Amatch%20config_max%20%7B%0A%20%20%20%20Some%28max%29%20%3D%3E%20println%21%28%22The%20maximum%20is%20configured%20to%20be%20%7B%7D%22%2C%20max%29%2C%0A%20%20%20%20_%20%3D%3E%20%28%29%2C%20//%20%E4%BB%96%E3%81%AE%E3%82%B1%E3%83%BC%E3%82%B9%E3%81%AF%E4%BD%95%E3%82%82%E3%81%97%E3%81%AA%E3%81%84%0A%7D)
 `_ => ()` は「その他のすべてのケースにマッチし、何もしない」という意味ですが、少し回りくどいですね。
 
 このような場合に、`if let` 構文が役立ちます。`if let` は `match` の糖衣構文 (シンタックスシュガー) で、値が特定のパターンに一致した場合にのみコードブロックを実行します。
@@ -226,6 +235,7 @@ if let Some(max) = config_max {
     println!("The maximum is configured to be {}", max);
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=//%20if%20let%20%E3%82%92%E4%BD%BF%E3%81%A3%E3%81%9F%E5%A0%B4%E5%90%88%0Aif%20let%20Some%28max%29%20%3D%20config_max%20%7B%0A%20%20%20%20println%21%28%22The%20maximum%20is%20configured%20to%20be%20%7B%7D%22%2C%20max%29%3B%0A%7D)
 
 `match` で行っていた処理を、より簡潔に記述できました。`else` を組み合わせることも可能です。
 

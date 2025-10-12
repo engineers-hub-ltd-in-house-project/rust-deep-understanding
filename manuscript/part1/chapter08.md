@@ -25,6 +25,7 @@ fn dangle() -> &String {
     &s
 } // `s` はここでスコープを抜け、破棄(drop)される
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=//%20src/main.rs%0A%0Afn%20main%28%29%20%7B%0A%20%20%20%20let%20reference_to_nothing%20%3D%20dangle%28%29%3B%0A%7D%0A%0Afn%20dangle%28%29%20-%3E%20%26String%20%7B%0A%20%20%20%20let%20s%20%3D%20String%3A%3Afrom%28%22hello%22%29%3B%0A%20%20%20%20%26s%0A%7D%20//%20%60s%60%20%E3%81%AF%E3%81%93%E3%81%93%E3%81%A7%E3%82%B9%E3%82%B3%E3%83%BC%E3%83%97%E3%82%92%E6%8A%9C%E3%81%91%E3%80%81%E7%A0%B4%E6%A3%84%28drop%29%E3%81%95%E3%82%8C%E3%82%8B)
 
 このコードに対して、コンパイラは `missing lifetime specifier` というエラーを出しました。これは「ライフタイム指定子が見つかりません」という意味です。
 
@@ -62,6 +63,7 @@ fn longest(x: &str, y: &str) -> &str {
     }
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20main%28%29%20%7B%0A%20%20%20%20let%20string1%20%3D%20String%3A%3Afrom%28%22abcd%22%29%3B%0A%20%20%20%20let%20string2%20%3D%20%22xyz%22%3B%0A%0A%20%20%20%20let%20result%20%3D%20longest%28string1.as_str%28%29%2C%20string2%29%3B%0A%20%20%20%20println%21%28%22The%20longest%20string%20is%20%7B%7D%22%2C%20result%29%3B%0A%7D%0A%0A//%20%E2%9D%8C%20%E3%81%93%E3%81%AE%E3%82%B3%E3%83%BC%E3%83%89%E3%81%AF%E3%82%B3%E3%83%B3%E3%83%91%E3%82%A4%E3%83%AB%E3%81%A7%E3%81%8D%E3%81%AA%E3%81%84%EF%BC%81%0Afn%20longest%28x%3A%20%26str%2C%20y%3A%20%26str%29%20-%3E%20%26str%20%7B%0A%20%20%20%20if%20x.len%28%29%20%3E%20y.len%28%29%20%7B%0A%20%20%20%20%20%20%20%20x%0A%20%20%20%20%7D%20else%20%7B%0A%20%20%20%20%20%20%20%20y%0A%20%20%20%20%7D%0A%7D)
 
 これを `cargo run` すると、`dangle` 関数の時と同じ `missing lifetime specifier` エラーが出ます。エラーの詳細を読むと、非常に的確なヒントが書かれています。
 
@@ -100,6 +102,7 @@ fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {
     }
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20longest%3C%27a%3E%28x%3A%20%26%27a%20str%2C%20y%3A%20%26%27a%20str%29%20-%3E%20%26%27a%20str%20%7B%0A%20%20%20%20if%20x.len%28%29%20%3E%20y.len%28%29%20%7B%0A%20%20%20%20%20%20%20%20x%0A%20%20%20%20%7D%20else%20%7B%0A%20%20%20%20%20%20%20%20y%0A%20%20%20%20%7D%0A%7D)
 
 - **`<'a>`**: ジェネリックライフタイムパラメータ `'a` を宣言しています。「これから `'a` という名前のライフタイムを使いますよ」という合図です。
 - **`x: &'a str, y: &'a str`**: 引数 `x` と `y` は、両方とも同じライフタイム `'a` を持つ文字列スライスであることを示します。
@@ -143,6 +146,7 @@ graph TD
 ```rust
 let s: &'static str = "I have a static lifetime.";
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=let%20s%3A%20%26%27static%20str%20%3D%20%22I%20have%20a%20static%20lifetime.%22%3B)
 
 `'static` ライフタイムをエラーメッセージで見かけた場合は、参照が期待よりも長く生存することを要求されているか、ダングリング参照を作ろうとしている可能性が高いです。
 

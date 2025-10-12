@@ -44,6 +44,7 @@ fn main() {
     }
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=//%20src/main.rs%0A%0Afn%20main%28%29%20%7B%0A%20%20%20%20//%20vec%21%20%E3%83%9E%E3%82%AF%E3%83%AD%E3%81%A7%E5%88%9D%E6%9C%9F%E5%80%A4%E3%82%92%E6%8C%81%E3%81%A4%E3%83%99%E3%82%AF%E3%82%BF%E3%82%92%E4%BD%9C%E6%88%90%0A%20%20%20%20let%20mut%20v%20%3D%20vec%21%5B100%2C%2032%2C%2057%5D%3B%0A%0A%20%20%20%20//%20%E8%A6%81%E7%B4%A0%E3%81%AE%E8%BF%BD%E5%8A%A0%0A%20%20%20%20v.push%2877%29%3B%0A%0A%20%20%20%20//%20%E8%A6%81%E7%B4%A0%E3%81%B8%E3%81%AE%E3%82%A2%E3%82%AF%E3%82%BB%E3%82%B9%0A%20%20%20%20//%20%E6%B7%BB%E5%AD%97%E3%81%A7%E3%82%A2%E3%82%AF%E3%82%BB%E3%82%B9%E3%81%99%E3%82%8B%E3%81%A8%E3%80%81%E7%AF%84%E5%9B%B2%E5%A4%96%E3%81%AE%E5%A0%B4%E5%90%88%E3%83%91%E3%83%8B%E3%83%83%E3%82%AF%E3%82%92%E8%B5%B7%E3%81%93%E3%81%99%0A%20%20%20%20let%20third%3A%20%26i32%20%3D%20%26v%5B2%5D%3B%0A%20%20%20%20println%21%28%22The%20third%20element%20is%20%7B%7D%22%2C%20third%29%3B%0A%0A%20%20%20%20//%20.get%20%E3%82%92%E4%BD%BF%E3%81%86%E3%81%A8%20Option%3C%26T%3E%20%E3%81%8C%E8%BF%94%E3%82%8B%E3%81%9F%E3%82%81%E5%AE%89%E5%85%A8%0A%20%20%20%20match%20v.get%282%29%20%7B%0A%20%20%20%20%20%20%20%20Some%28third%29%20%3D%3E%20println%21%28%22The%20third%20element%20is%20%7B%7D%22%2C%20third%29%2C%0A%20%20%20%20%20%20%20%20None%20%3D%3E%20println%21%28%22There%20is%20no%20third%20element.%22%29%2C%0A%20%20%20%20%7D%0A%7D)
 
 ### 試してみよう：借用ルールとベクタ
 
@@ -60,6 +61,7 @@ fn main() {
     println!("The first element is: {}", first);
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20main%28%29%20%7B%0A%20%20%20%20let%20mut%20v%20%3D%20vec%21%5B1%2C%202%2C%203%2C%204%2C%205%5D%3B%0A%0A%20%20%20%20let%20first%20%3D%20%26v%5B0%5D%3B%20//%20v%20%E3%81%AE%E6%9C%80%E5%88%9D%E3%81%AE%E8%A6%81%E7%B4%A0%E3%81%B8%E3%81%AE%E4%B8%8D%E5%A4%89%E3%81%AE%E5%8F%82%E7%85%A7%E3%82%92%E5%8F%96%E5%BE%97%0A%0A%20%20%20%20v.push%286%29%3B%20//%20v%20%E3%81%AB%E8%A6%81%E7%B4%A0%E3%82%92%E8%BF%BD%E5%8A%A0%E3%81%97%E3%82%88%E3%81%86%E3%81%A8%E3%81%99%E3%82%8B%EF%BC%88%E5%8F%AF%E5%A4%89%E3%81%AE%E5%80%9F%E7%94%A8%E3%81%8C%E5%BF%85%E8%A6%81%EF%BC%89%0A%0A%20%20%20%20println%21%28%22The%20first%20element%20is%3A%20%7B%7D%22%2C%20first%29%3B%0A%7D)
 
 これを `cargo run` するとコンパイルエラーになります。
 
@@ -99,6 +101,7 @@ fn main() {
     println!("{}", s); // "foobar"
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20main%28%29%20%7B%0A%20%20%20%20let%20mut%20s%20%3D%20String%3A%3Anew%28%29%3B%20//%20%E7%A9%BA%E3%81%AEString%E3%82%92%E4%BD%9C%E6%88%90%0A%20%20%20%20%0A%20%20%20%20let%20data%20%3D%20%22initial%20contents%22%3B%0A%20%20%20%20let%20s%20%3D%20data.to_string%28%29%3B%20//%20%26str%E3%81%8B%E3%82%89String%E3%82%92%E4%BD%9C%E6%88%90%0A%0A%20%20%20%20let%20mut%20s%20%3D%20String%3A%3Afrom%28%22foo%22%29%3B%0A%20%20%20%20s.push_str%28%22bar%22%29%3B%20//%20%E6%96%87%E5%AD%97%E5%88%97%E3%82%B9%E3%83%A9%E3%82%A4%E3%82%B9%E3%82%92%E8%BF%BD%E5%8A%A0%0A%20%20%20%20println%21%28%22%7B%7D%22%2C%20s%29%3B%20//%20%22foobar%22%0A%7D)
 関数に文字列を渡す際は、その関数の目的によって`String`と`&str`を使い分けることが重要です。単に文字列を読み取りたいだけなら、所有権を奪わない`&str`を引数に取る方が、柔軟性が高く効率的です。
 
 ## 12.4 `HashMap<K, V>`：キーと値のマッピング
@@ -126,6 +129,7 @@ fn main() {
     }
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=use%20std%3A%3Acollections%3A%3AHashMap%3B%0A%0Afn%20main%28%29%20%7B%0A%20%20%20%20let%20mut%20scores%20%3D%20HashMap%3A%3Anew%28%29%3B%0A%0A%20%20%20%20scores.insert%28String%3A%3Afrom%28%22Blue%22%29%2C%2010%29%3B%0A%20%20%20%20scores.insert%28String%3A%3Afrom%28%22Yellow%22%29%2C%2050%29%3B%0A%0A%20%20%20%20//%20%E5%80%A4%E3%81%AE%E5%8F%96%E5%BE%97%0A%20%20%20%20let%20team_name%20%3D%20String%3A%3Afrom%28%22Blue%22%29%3B%0A%20%20%20%20//%20get%20%E3%81%AF%20Option%3C%26V%3E%20%E3%82%92%E8%BF%94%E3%81%99%0A%20%20%20%20let%20score%20%3D%20scores.get%28%26team_name%29.copied%28%29.unwrap_or%280%29%3B%0A%20%20%20%20println%21%28%22Score%20for%20Blue%3A%20%7B%7D%22%2C%20score%29%3B%0A%0A%20%20%20%20//%20%E3%82%A4%E3%83%86%E3%83%AC%E3%83%BC%E3%83%88%0A%20%20%20%20for%20%28key%2C%20value%29%20in%20%26scores%20%7B%0A%20%20%20%20%20%20%20%20println%21%28%22%7B%7D%3A%20%7B%7D%22%2C%20key%2C%20value%29%3B%0A%20%20%20%20%7D%0A%7D)
 
 ### 試してみよう：HashMap と所有権
 
@@ -146,6 +150,7 @@ fn main() {
     // println!("{}, {}", field_name, field_value);
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=use%20std%3A%3Acollections%3A%3AHashMap%3B%0A%0Afn%20main%28%29%20%7B%0A%20%20%20%20let%20field_name%20%3D%20String%3A%3Afrom%28%22Favorite%20color%22%29%3B%0A%20%20%20%20let%20field_value%20%3D%20String%3A%3Afrom%28%22Blue%22%29%3B%0A%0A%20%20%20%20let%20mut%20map%20%3D%20HashMap%3A%3Anew%28%29%3B%0A%20%20%20%20map.insert%28field_name%2C%20field_value%29%3B%0A%0A%20%20%20%20//%20%E4%BB%A5%E4%B8%8B%E3%81%AE%E8%A1%8C%E3%81%AE%E3%82%B3%E3%83%A1%E3%83%B3%E3%83%88%E3%82%92%E5%A4%96%E3%81%99%E3%81%A8%E3%82%B3%E3%83%B3%E3%83%91%E3%82%A4%E3%83%AB%E3%82%A8%E3%83%A9%E3%83%BC%EF%BC%81%0A%20%20%20%20//%20field_name%20%E3%81%A8%20field_value%20%E3%81%AF%20map%20%E3%81%AB%E3%83%A0%E3%83%BC%E3%83%96%E3%81%95%E3%82%8C%E3%81%9F%E5%BE%8C%E3%81%AA%E3%81%AE%E3%81%A7%E4%BD%BF%E3%81%88%E3%81%AA%E3%81%84%0A%20%20%20%20//%20println%21%28%22%7B%7D%2C%20%7B%7D%22%2C%20field_name%2C%20field_value%29%3B%0A%7D)
 `Copy`トレイトを実装する`i32`のような型であれば値はコピーされますが、`String`のようなヒープにデータを持つ型はムーブされます。これも所有権システムの基本ルールがそのまま適用されています。
 
 ## 12.5 まとめ

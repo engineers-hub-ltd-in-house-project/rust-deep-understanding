@@ -43,6 +43,7 @@ fn main() {
     let list = List::Cons(1, List::Cons(2, List::Cons(3, List::Nil)));
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=//%20src/main.rs%0A%0A//%20%E3%81%93%E3%81%AE%E3%82%B3%E3%83%BC%E3%83%89%E3%81%AF%E3%82%B3%E3%83%B3%E3%83%91%E3%82%A4%E3%83%AB%E3%82%A8%E3%83%A9%E3%83%BC%E3%81%AB%E3%81%AA%E3%82%8B%EF%BC%81%0Aenum%20List%20%7B%0A%20%20%20%20Cons%28i32%2C%20List%29%2C%0A%20%20%20%20Nil%2C%0A%7D%0A%0Afn%20main%28%29%20%7B%0A%20%20%20%20let%20list%20%3D%20List%3A%3ACons%281%2C%20List%3A%3ACons%282%2C%20List%3A%3ACons%283%2C%20List%3A%3ANil%29%29%29%3B%0A%7D)
 
 これをコンパイルすると、コンパイラは混乱してしまいます。
 
@@ -81,6 +82,7 @@ fn main() {
     let list = Cons(1, Box::new(Cons(2, Box::new(Cons(3, Box::new(Nil))))));
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=//%20src/main.rs%0A%0Aenum%20List%20%7B%0A%20%20%20%20Cons%28i32%2C%20Box%3CList%3E%29%2C%20//%20List%20%E3%81%AE%E4%BB%A3%E3%82%8F%E3%82%8A%E3%81%AB%20Box%3CList%3E%20%E3%82%92%E4%BD%BF%E3%81%86%0A%20%20%20%20Nil%2C%0A%7D%0A%0Ause%20List%3A%3A%7BCons%2C%20Nil%7D%3B%0A%0Afn%20main%28%29%20%7B%0A%20%20%20%20let%20list%20%3D%20Cons%281%2C%20Box%3A%3Anew%28Cons%282%2C%20Box%3A%3Anew%28Cons%283%2C%20Box%3A%3Anew%28Nil%29%29%29%29%29%29%3B%0A%7D)
 これでエラーは解決します。`Box<T>` はヒープ上のデータへの唯一の所有者として振る舞い、所有権のルールも通常通り適用されます。
 
 ## 17.3 `Drop` トレイトと RAII パターン
@@ -117,6 +119,7 @@ fn main() {
     println!("--- End of main scope ---");
 } // a と b はここでスコープを抜ける
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=//%20src/main.rs%0A%0Astruct%20MySmartPointer%20%7B%0A%20%20%20%20data%3A%20String%2C%0A%7D%0A%0A//%20Drop%20%E3%83%88%E3%83%AC%E3%82%A4%E3%83%88%E3%82%92%E5%AE%9F%E8%A3%85%0Aimpl%20Drop%20for%20MySmartPointer%20%7B%0A%20%20%20%20fn%20drop%28%26mut%20self%29%20%7B%0A%20%20%20%20%20%20%20%20println%21%28%22Dropping%20MySmartPointer%20with%20data%20%60%7B%7D%60%21%22%2C%20self.data%29%3B%0A%20%20%20%20%7D%0A%7D%0A%0Afn%20main%28%29%20%7B%0A%20%20%20%20let%20a%20%3D%20MySmartPointer%20%7B%20data%3A%20%22hello%22.to_string%28%29%20%7D%3B%0A%20%20%20%20println%21%28%22MySmartPointer%20%27a%27%20created.%22%29%3B%0A%20%20%20%20%0A%20%20%20%20let%20b%20%3D%20MySmartPointer%20%7B%20data%3A%20%22world%22.to_string%28%29%20%7D%3B%0A%20%20%20%20println%21%28%22MySmartPointer%20%27b%27%20created.%22%29%3B%0A%0A%20%20%20%20println%21%28%22---%20End%20of%20main%20scope%20---%22%29%3B%0A%7D%20//%20a%20%E3%81%A8%20b%20%E3%81%AF%E3%81%93%E3%81%93%E3%81%A7%E3%82%B9%E3%82%B3%E3%83%BC%E3%83%97%E3%82%92%E6%8A%9C%E3%81%91%E3%82%8B)
 
 これを実行すると、`main` 関数が終了するタイミングで、変数が作られたのとは **逆の順番** で `drop` が呼ばれることがわかります。
 

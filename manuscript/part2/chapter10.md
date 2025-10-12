@@ -42,6 +42,7 @@ fn main() {
     let six = IpAddrKind::V6;
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=//%20src/main.rs%0A%0Aenum%20IpAddrKind%20%7B%0A%20%20%20%20V4%2C%0A%20%20%20%20V6%2C%0A%7D%0A%0Afn%20main%28%29%20%7B%0A%20%20%20%20let%20four%20%3D%20IpAddrKind%3A%3AV4%3B%0A%20%20%20%20let%20six%20%3D%20IpAddrKind%3A%3AV6%3B%0A%7D)
 ここまでは他の言語と似ていますが、Rust の `enum` の真価は、**各バリアントがそれぞれ異なるデータを持てる** ことにあります。
 
 ```rust
@@ -55,6 +56,7 @@ fn main() {
     let loopback = IpAddr::V6(String::from("::1"));
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=enum%20IpAddr%20%7B%0A%20%20%20%20V4%28u8%2C%20u8%2C%20u8%2C%20u8%29%2C%0A%20%20%20%20V6%28String%29%2C%0A%7D%0A%0Afn%20main%28%29%20%7B%0A%20%20%20%20let%20home%20%3D%20IpAddr%3A%3AV4%28127%2C%200%2C%200%2C%201%29%3B%0A%20%20%20%20let%20loopback%20%3D%20IpAddr%3A%3AV6%28String%3A%3Afrom%28%22%3A%3A1%22%29%29%3B%0A%7D)
 このように、同じ `IpAddr` という型でありながら、`V4` バリアントは 4 つの `u8` を、`V6` バリアントは 1 つの `String` を持つことができます。これは、構造体(`struct`) を複数種類まとめて一つの型として扱えるようなもので、非常に強力です。
 
 ```mermaid
@@ -78,6 +80,7 @@ enum Option<T> {
     Some(T),   // T 型の値が存在することを示すバリアント
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=enum%20Option%3CT%3E%20%7B%0A%20%20%20%20None%2C%20%20%20%20%20%20//%20%E5%80%A4%E3%81%8C%E5%AD%98%E5%9C%A8%E3%81%97%E3%81%AA%E3%81%84%E3%81%93%E3%81%A8%E3%82%92%E7%A4%BA%E3%81%99%E3%83%90%E3%83%AA%E3%82%A2%E3%83%B3%E3%83%88%0A%20%20%20%20Some%28T%29%2C%20%20%20//%20T%20%E5%9E%8B%E3%81%AE%E5%80%A4%E3%81%8C%E5%AD%98%E5%9C%A8%E3%81%99%E3%82%8B%E3%81%93%E3%81%A8%E3%82%92%E7%A4%BA%E3%81%99%E3%83%90%E3%83%AA%E3%82%A2%E3%83%B3%E3%83%88%0A%7D)
 `<T>` はジェネリック型パラメータで、`Some` バリアントが任意の型の値を保持できることを意味します。例えば `Option<i32>` なら `Some` は `i32` の値を持ち、`Option<String>` なら `String` の値を持ちます。
 
 `Option<T>` を使うことで、コンパイラは「値が存在しないかもしれない」という可能性を常に認識できます。ある値が `i32` ではなく `Option<i32>` 型である場合、それは `None` である可能性があり、`Some` の中の値を取り出す前に、その可能性を **必ず** 処理しなければなりません。
@@ -98,6 +101,7 @@ fn main() {
     let sum = x + y;
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=//%20src/main.rs%0A%0Afn%20main%28%29%20%7B%0A%20%20%20%20let%20x%3A%20i8%20%3D%205%3B%0A%20%20%20%20let%20y%3A%20Option%3Ci8%3E%20%3D%20Some%285%29%3B%0A%0A%20%20%20%20//%20%E2%9D%8C%20%E3%82%B3%E3%83%B3%E3%83%91%E3%82%A4%E3%83%AB%E3%82%A8%E3%83%A9%E3%83%BC%EF%BC%81%0A%20%20%20%20//%20%E7%95%B0%E3%81%AA%E3%82%8B%E5%9E%8B%E5%90%8C%E5%A3%AB%E3%81%AE%E8%B6%B3%E3%81%97%E7%AE%97%E3%81%AF%E3%81%A7%E3%81%8D%E3%81%AA%E3%81%84%0A%20%20%20%20let%20sum%20%3D%20x%20%2B%20y%3B%0A%7D)
 `cargo run` を実行すると、`cannot add Option<i8> to i8` というエラーが出ます。`y` は `8` ではなく `Some(8)` という `Option` 型の値なので、`i8` の `x` とは足し算ができないのです。
 
 このエラーこそが、`nil` や `None` である可能性を忘れて実行時エラーを引き起こすバグを、コンパイル時に完全に防いでくれる Rust の安全機能なのです。
@@ -122,6 +126,7 @@ fn main() {
     // six は Some(6), none は None になる
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20plus_one%28x%3A%20Option%3Ci32%3E%29%20-%3E%20Option%3Ci32%3E%20%7B%0A%20%20%20%20match%20x%20%7B%0A%20%20%20%20%20%20%20%20None%20%3D%3E%20None%2C%20//%20%60None%60%20%E3%81%AE%E5%A0%B4%E5%90%88%E3%81%AF%E4%BD%95%E3%82%82%E3%81%97%E3%81%AA%E3%81%84%E3%81%A7%20%60None%60%20%E3%82%92%E8%BF%94%E3%81%99%0A%20%20%20%20%20%20%20%20Some%28i%29%20%3D%3E%20Some%28i%20%2B%201%29%2C%20//%20%60Some%60%20%E3%81%AE%E5%A0%B4%E5%90%88%E3%81%AF%E4%B8%AD%E3%81%AE%E5%80%A4%20i%20%E3%82%92%E5%8F%96%E3%82%8A%E5%87%BA%E3%81%97%E3%81%A6%201%20%E3%82%92%E8%B6%B3%E3%81%97%E3%80%81Some%20%E3%81%A7%E5%8C%85%E3%82%93%E3%81%A7%E8%BF%94%E3%81%99%0A%20%20%20%20%7D%0A%7D%0A%0Afn%20main%28%29%20%7B%0A%20%20%20%20let%20five%20%3D%20Some%285%29%3B%0A%20%20%20%20let%20six%20%3D%20plus_one%28five%29%3B%0A%20%20%20%20let%20none%20%3D%20plus_one%28None%29%3B%0A%20%20%20%20%0A%20%20%20%20//%20six%20%E3%81%AF%20Some%286%29%2C%20none%20%E3%81%AF%20None%20%E3%81%AB%E3%81%AA%E3%82%8B%0A%7D)
 `match` 式は網羅的であるため、`None` のケースを処理し忘れるとコンパイルエラーになります。これにより、`nil` チェックのし忘れというよくあるミスを型システムが防いでくれます。`if let` を使って `Some` の場合だけを簡潔に書くこともできます。
 
 ## 10.5 まとめ

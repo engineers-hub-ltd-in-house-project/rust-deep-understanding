@@ -21,6 +21,7 @@ pub fn add_two(a: i32) -> i32 {
     a + 2
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=//%20src/lib.rs%0Apub%20fn%20add_two%28a%3A%20i32%29%20-%3E%20i32%20%7B%0A%20%20%20%20a%20%2B%202%0A%7D)
 ```rust
 // src/main.rs
 use adder::add_two;
@@ -31,6 +32,7 @@ fn main() {
     // これが 4 になっているか、毎回目で見て確認する必要がある...
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=//%20src/main.rs%0Ause%20adder%3A%3Aadd_two%3B%0A%0Afn%20main%28%29%20%7B%0A%20%20%20%20let%20result%20%3D%20add_two%282%29%3B%0A%20%20%20%20println%21%28%22Result%20of%20add_two%282%29%20is%3A%20%7B%7D%22%2C%20result%29%3B%0A%20%20%20%20//%20%E3%81%93%E3%82%8C%E3%81%8C%204%20%E3%81%AB%E3%81%AA%E3%81%A3%E3%81%A6%E3%81%84%E3%82%8B%E3%81%8B%E3%80%81%E6%AF%8E%E5%9B%9E%E7%9B%AE%E3%81%A7%E8%A6%8B%E3%81%A6%E7%A2%BA%E8%AA%8D%E3%81%99%E3%82%8B%E5%BF%85%E8%A6%81%E3%81%8C%E3%81%82%E3%82%8B...%0A%7D)
 
 この方法には問題があります。
 - **面倒**: 機能が増えるたびに `main` 関数が複雑になる。
@@ -76,6 +78,7 @@ mod tests {
     }
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=//%20src/lib.rs%0Apub%20fn%20add_two%28a%3A%20i32%29%20-%3E%20i32%20%7B%0A%20%20%20%20a%20%2B%202%0A%7D%0A%0A//%20%E3%81%93%E3%81%AE%E5%B1%9E%E6%80%A7%E3%81%AF%E3%80%81%60cargo%20test%60%20%E3%82%92%E5%AE%9F%E8%A1%8C%E3%81%97%E3%81%9F%E6%99%82%E3%81%AB%E3%81%A0%E3%81%91%E3%82%B3%E3%83%B3%E3%83%91%E3%82%A4%E3%83%AB%E3%81%95%E3%82%8C%E3%82%8B%E3%81%93%E3%81%A8%E3%82%92%E7%A4%BA%E3%81%99%0A%23%5Bcfg%28test%29%5D%0Amod%20tests%20%7B%0A%20%20%20%20use%20super%3A%3A%2A%3B%20//%20%E8%A6%AA%E3%83%A2%E3%82%B8%E3%83%A5%E3%83%BC%E3%83%AB%EF%BC%88%E3%81%93%E3%81%AE%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E3%81%AE%E4%B8%8A%E5%8D%8A%E5%88%86%EF%BC%89%E3%81%AE%E3%82%A2%E3%82%A4%E3%83%86%E3%83%A0%E3%82%92%E3%82%A4%E3%83%B3%E3%83%9D%E3%83%BC%E3%83%88%0A%0A%20%20%20%20%23%5Btest%5D%0A%20%20%20%20fn%20it_works%28%29%20%7B%0A%20%20%20%20%20%20%20%20assert_eq%21%282%20%2B%202%2C%204%29%3B%0A%20%20%20%20%7D%0A%0A%20%20%20%20%23%5Btest%5D%0A%20%20%20%20fn%20add_two_test%28%29%20%7B%0A%20%20%20%20%20%20%20%20//%20%E3%82%8F%E3%81%96%E3%81%A8%E5%A4%B1%E6%95%97%E3%81%95%E3%81%9B%E3%81%A6%E3%81%BF%E3%82%88%E3%81%86%EF%BC%81%0A%20%20%20%20%20%20%20%20assert_eq%21%28add_two%282%29%2C%205%29%3B%20%0A%20%20%20%20%7D%0A%7D)
 `assert_eq!(left, right)` は、`left` と `right` が等しいことを表明 (assert) するマクロです。もし等しくなければ、スレッドはパニックし、テストは失敗したとマークされます。
 
 `cargo test` を実行してみましょう。
@@ -130,6 +133,7 @@ mod tests {
     }
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=//%20src/lib.rs%0A//%20...%0Apub%20struct%20Guess%20%7B%0A%20%20%20%20value%3A%20i32%2C%0A%7D%0A%0Aimpl%20Guess%20%7B%0A%20%20%20%20pub%20fn%20new%28value%3A%20i32%29%20-%3E%20Guess%20%7B%0A%20%20%20%20%20%20%20%20if%20value%20%3C%201%20%7C%7C%20value%20%3E%20100%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20panic%21%28%22Guess%20value%20must%20be%20between%201%20and%20100%2C%20got%20%7B%7D.%22%2C%20value%29%3B%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%20%20%20%20Guess%20%7B%20value%20%7D%0A%20%20%20%20%7D%0A%7D%0A%0A%23%5Bcfg%28test%29%5D%0Amod%20tests%20%7B%0A%20%20%20%20//%20...%0A%20%20%20%20%23%5Btest%5D%0A%20%20%20%20%23%5Bshould_panic%5D%0A%20%20%20%20fn%20greater_than_100%28%29%20%7B%0A%20%20%20%20%20%20%20%20Guess%3A%3Anew%28200%29%3B%0A%20%20%20%20%7D%0A%7D)
 このテストは、`Guess::new(200)` がパニックするので成功します。
 
 ## 20.3 統合テスト (Integration Tests)
@@ -152,6 +156,7 @@ fn it_adds_two_integration() {
     assert_eq!(4, adder::add_two(2));
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=//%20tests/integration_test.rs%0A%0A//%20%E3%82%AF%E3%83%AC%E3%83%BC%E3%83%88%E5%90%8D%E3%82%92%20%60use%60%20%E3%81%A7%E3%82%A4%E3%83%B3%E3%83%9D%E3%83%BC%E3%83%88%E3%81%99%E3%82%8B%0Ause%20adder%3B%0A%0A%23%5Btest%5D%0Afn%20it_adds_two_integration%28%29%20%7B%0A%20%20%20%20assert_eq%21%284%2C%20adder%3A%3Aadd_two%282%29%29%3B%0A%7D)
 `cargo test` を実行すると、Cargo は単体テストに加えて `tests` ディレクトリ内のテストも自動的に実行してくれます。
 
 ## 20.4 まとめ

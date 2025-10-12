@@ -60,6 +60,7 @@ fn py_rust_ext(_py: Python, m: &PyModule) -> PyResult<()> {
     Ok(())
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=//%20py-rust-ext/src/lib.rs%0Ause%20pyo3%3A%3Aprelude%3A%3A%2A%3B%0A%0A//%20Python%E3%81%8B%E3%82%89%E5%91%BC%E3%81%B3%E5%87%BA%E3%81%9B%E3%82%8B%E3%82%88%E3%81%86%E3%81%AB%20%23%5Bpyfunction%5D%20%E3%82%92%E3%81%A4%E3%81%91%E3%82%8B%0A%23%5Bpyfunction%5D%0Afn%20fib%28n%3A%20u64%29%20-%3E%20u64%20%7B%0A%20%20%20%20if%20n%20%3C%3D%201%20%7B%0A%20%20%20%20%20%20%20%20n%0A%20%20%20%20%7D%20else%20%7B%0A%20%20%20%20%20%20%20%20fib%28n%20-%201%29%20%2B%20fib%28n%20-%202%29%0A%20%20%20%20%7D%0A%7D%0A%0A//%20%E3%83%A2%E3%82%B8%E3%83%A5%E3%83%BC%E3%83%AB%E5%AE%9A%E7%BE%A9%0A%23%5Bpymodule%5D%0Afn%20py_rust_ext%28_py%3A%20Python%2C%20m%3A%20%26PyModule%29%20-%3E%20PyResult%3C%28%29%3E%20%7B%0A%20%20%20%20m.add_function%28wrap_pyfunction%21%28fib%2C%20m%29%3F%29%3F%3B%0A%20%20%20%20Ok%28%28%29%29%0A%7D)
 
 **3. ビルドとインストール**
 プロジェクトのルート（`py-rust-ext/`）で `maturin develop` を実行します。これにより、Rustコードがコンパイルされ、現在のPython環境にモジュールとしてインストールされます。

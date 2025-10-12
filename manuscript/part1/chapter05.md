@@ -31,6 +31,7 @@ fn another_function(x: i32, unit_label: char) {
     println!("The measurement is: {}{}", x, unit_label);
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20main%28%29%20%7B%0A%20%20%20%20another_function%285%2C%20%27h%27%29%3B%0A%7D%0A%0A//%20%E9%96%A2%E6%95%B0%E3%81%AE%E5%AE%9A%E7%BE%A9%0Afn%20another_function%28x%3A%20i32%2C%20unit_label%3A%20char%29%20%7B%0A%20%20%20%20println%21%28%22The%20measurement%20is%3A%20%7B%7D%7B%7D%22%2C%20x%2C%20unit_label%29%3B%0A%7D)
 
 関数名の命名規則は、変数名と同様に スネークケース (`snake_case`) が慣習です。
 
@@ -55,6 +56,7 @@ fn main() {
     println!("The value of y is: {}", y);
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20main%28%29%20%7B%0A%20%20%20%20let%20y%20%3D%20%7B%0A%20%20%20%20%20%20%20%20let%20x%20%3D%203%3B%0A%20%20%20%20%20%20%20%20x%20%2B%201%20//%20%E3%81%93%E3%81%93%E3%81%AB%E3%82%BB%E3%83%9F%E3%82%B3%E3%83%AD%E3%83%B3%E3%81%8C%E3%81%AA%E3%81%84%E3%81%93%E3%81%A8%E3%81%AB%E6%B3%A8%E7%9B%AE%EF%BC%81%0A%20%20%20%20%7D%3B%0A%0A%20%20%20%20println%21%28%22The%20value%20of%20y%20is%3A%20%7B%7D%22%2C%20y%29%3B%0A%7D)
 
 これを `cargo run` すると、`The value of y is: 4` と表示されます。`{}` で囲まれたブロック全体が一つの式として評価され、その中の最後の式 `x + 1` の結果である `4` が `y` に束縛されました。
 
@@ -70,6 +72,7 @@ fn main() {
     println!("The value of y is: {}", y);
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20main%28%29%20%7B%0A%20%20%20%20let%20y%20%3D%20%7B%0A%20%20%20%20%20%20%20%20let%20x%20%3D%203%3B%0A%20%20%20%20%20%20%20%20x%20%2B%201%3B%20//%20%E3%82%BB%E3%83%9F%E3%82%B3%E3%83%AD%E3%83%B3%E3%82%92%E8%BF%BD%E5%8A%A0%EF%BC%81%0A%20%20%20%20%7D%3B%0A%0A%20%20%20%20println%21%28%22The%20value%20of%20y%20is%3A%20%7B%7D%22%2C%20y%29%3B%0A%7D)
 
 今度はコンパイルエラーです！
 
@@ -110,6 +113,7 @@ fn main() {
     println!("The value of x is: {}", x);
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20five%28%29%20-%3E%20i32%20%7B%0A%20%20%20%20return%205%3B%0A%7D%0A%0Afn%20main%28%29%20%7B%0A%20%20%20%20let%20x%20%3D%20five%28%29%3B%0A%20%20%20%20println%21%28%22The%20value%20of%20x%20is%3A%20%7B%7D%22%2C%20x%29%3B%0A%7D)
 
 **本書の方針**: 企画書で述べた通り、本書の第 1 部 (第 1 章〜第 14 章) では、学習者の混乱を避けるために、常に関数の戻り値には `return` を明示的に使用します。これにより、他の言語の経験者が持つ「値を返すには `return` を書く」という直感と一致させ、学習をスムーズに進めます。
 
@@ -131,6 +135,7 @@ fn main() {
     println!("The result is: {}", result); // => 6
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20plus_one%28x%3A%20i32%29%20-%3E%20i32%20%7B%0A%20%20%20%20x%20%2B%201%20//%20%E3%82%BB%E3%83%9F%E3%82%B3%E3%83%AD%E3%83%B3%E3%81%AA%E3%81%97%E3%80%82%E3%81%93%E3%82%8C%E3%81%8C%E5%BC%8F%E3%81%A8%E3%81%AA%E3%82%8A%E3%80%81%E3%81%93%E3%81%AE%E9%96%A2%E6%95%B0%E3%81%AE%E6%88%BB%E3%82%8A%E5%80%A4%E3%81%AB%E3%81%AA%E3%82%8B%0A%7D%0A%0Afn%20main%28%29%20%7B%0A%20%20%20%20let%20result%20%3D%20plus_one%285%29%3B%0A%20%20%20%20println%21%28%22The%20result%20is%3A%20%7B%7D%22%2C%20result%29%3B%20//%20%3D%3E%206%0A%7D)
 
 この書き方は非常に簡潔で、Rust に慣れたプログラマは多用します。しかし、もし `x + 1` の後ろにセミコロンを付けてしまうと、先ほどと同じようにコンパイルエラーになります。
 
@@ -153,6 +158,7 @@ fn main() {
     assert!(equal_to_x(y));
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20main%28%29%20%7B%0A%20%20%20%20let%20x%20%3D%204%3B%0A%0A%20%20%20%20//%20%60x%60%20%E3%82%92%E3%82%AD%E3%83%A3%E3%83%97%E3%83%81%E3%83%A3%E3%81%99%E3%82%8B%E3%82%AF%E3%83%AD%E3%83%BC%E3%82%B8%E3%83%A3%E3%82%92%E5%AE%9A%E7%BE%A9%0A%20%20%20%20//%20%E5%BC%95%E6%95%B0%E3%81%AF%20%60%7C%60%20%E3%81%A7%E5%9B%B2%E3%81%BF%E3%80%81%E5%9E%8B%E3%81%AF%E6%8E%A8%E8%AB%96%E3%81%95%E3%82%8C%E3%82%8B%E3%81%93%E3%81%A8%E3%81%8C%E5%A4%9A%E3%81%84%0A%20%20%20%20let%20equal_to_x%20%3D%20%7Cz%7C%20z%20%3D%3D%20x%3B%0A%0A%20%20%20%20let%20y%20%3D%204%3B%0A%0A%20%20%20%20assert%21%28equal_to_x%28y%29%29%3B%0A%7D)
 
 この例では、クロージャ `equal_to_x` が、自身のスコープの外にある変数 `x` の値を「覚えて」います。
 
@@ -175,6 +181,7 @@ fn main() {
     assert!(equal_to_x(y));
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20main%28%29%20%7B%0A%20%20%20%20let%20x%20%3D%20vec%21%5B1%2C%202%2C%203%5D%3B%0A%0A%20%20%20%20//%20%60move%60%20%E3%82%92%E4%BD%BF%E3%81%A3%E3%81%A6%20%60x%60%20%E3%81%AE%E6%89%80%E6%9C%89%E6%A8%A9%E3%82%92%E3%82%AF%E3%83%AD%E3%83%BC%E3%82%B8%E3%83%A3%E3%81%AB%E7%A7%BB%E5%8B%95%E3%81%95%E3%81%9B%E3%82%8B%0A%20%20%20%20let%20equal_to_x%20%3D%20move%20%7Cz%7C%20z%20%3D%3D%20x%3B%0A%0A%20%20%20%20//%20%60x%60%20%E3%81%AF%E3%81%99%E3%81%A7%E3%81%AB%E3%82%AF%E3%83%AD%E3%83%BC%E3%82%B8%E3%83%A3%E3%81%AB%E6%89%80%E6%9C%89%E6%A8%A9%E3%82%92%E5%A5%AA%E3%82%8F%E3%82%8C%E3%81%A6%E3%81%84%E3%82%8B%E3%81%AE%E3%81%A7%E3%80%81%E3%81%93%E3%81%93%E3%81%A7%E3%81%AF%E3%82%82%E3%81%86%E4%BD%BF%E3%81%88%E3%81%AA%E3%81%84%0A%20%20%20%20//%20println%21%28%22can%27t%20use%20x%20here%3A%20%7B%3A%3F%7D%22%2C%20x%29%3B%20//%20%E3%81%93%E3%81%AE%E8%A1%8C%E3%81%AE%E3%82%B3%E3%83%A1%E3%83%B3%E3%83%88%E3%82%92%E5%A4%96%E3%81%99%E3%81%A8%E3%82%B3%E3%83%B3%E3%83%91%E3%82%A4%E3%83%AB%E3%82%A8%E3%83%A9%E3%83%BC%0A%0A%20%20%20%20let%20y%20%3D%20vec%21%5B1%2C%202%2C%203%5D%3B%0A%0A%20%20%20%20assert%21%28equal_to_x%28y%29%29%3B%0A%7D)
 
 `println!` の行のコメントを外して `cargo run` すると、「`borrow of moved value: x` (ムーブされた値 `x` を借用しようとした)」という、所有権に関するエラーが発生します。
 

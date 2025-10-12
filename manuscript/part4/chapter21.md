@@ -47,6 +47,7 @@ pub fn add_two(a: i32) -> i32 {
 
 // ... tests モジュール ...
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=//%20src/lib.rs%0A%0A//%21%20%23%20Adder%0A//%21%20%0A//%21%20%60adder%60%20%E3%81%AF%E3%80%81%E6%95%B0%E5%80%A4%E8%A8%88%E7%AE%97%E3%80%81%E7%89%B9%E3%81%AB%E8%B6%B3%E3%81%97%E7%AE%97%E3%82%92%E8%A1%8C%E3%81%86%E3%81%9F%E3%82%81%E3%81%AE%E3%83%A6%E3%83%BC%E3%83%86%E3%82%A3%E3%83%AA%E3%83%86%E3%82%A3%E3%82%92%E9%9B%86%E3%82%81%E3%81%9F%0A//%21%20%E3%83%A9%E3%82%A4%E3%83%96%E3%83%A9%E3%83%AA%E3%81%A7%E3%81%99%E3%80%82%EF%BC%88%E3%81%A8%E3%81%84%E3%81%86%E6%83%B3%E5%AE%9A%E3%81%A7%E3%81%99%EF%BC%89%0A%0A///%20%E6%B8%A1%E3%81%95%E3%82%8C%E3%81%9F%E6%95%B0%E5%80%A4%E3%81%AB2%E3%82%92%E5%8A%A0%E7%AE%97%E3%81%97%E3%81%BE%E3%81%99%E3%80%82%0A///%0A///%20%23%20Examples%0A///%0A///%20%60%60%60%0A///%20let%20arg%20%3D%205%3B%0A///%20let%20answer%20%3D%20adder%3A%3Aadd_two%28arg%29%3B%0A///%0A///%20assert_eq%21%287%2C%20answer%29%3B%0A///%20%60%60%60%0Apub%20fn%20add_two%28a%3A%20i32%29%20-%3E%20i32%20%7B%0A%20%20%20%20a%20%2B%202%0A%7D%0A%0A//%20...%20tests%20%E3%83%A2%E3%82%B8%E3%83%A5%E3%83%BC%E3%83%AB%20...)
 - `///`: その直後にあるアイテム（この場合は `add_two` 関数）を説明します。
 - `//!`: そのコメントが含まれているアイテム（この場合はクレート全体）を説明します。
 
@@ -70,6 +71,7 @@ cargo doc --open
 /// assert_eq!(8, answer); // 7 ではなく 8 にしてみる
 // ...
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=//%20...%0A///%20assert_eq%21%288%2C%20answer%29%3B%20//%207%20%E3%81%A7%E3%81%AF%E3%81%AA%E3%81%8F%208%20%E3%81%AB%E3%81%97%E3%81%A6%E3%81%BF%E3%82%8B%0A//%20...)
 
 この状態で `cargo test` を実行すると、ドキュメンテーションテストが失敗し、`assert_eq` が失敗したときと同じように親切な差分が表示されます。
 
@@ -110,6 +112,7 @@ pub fn slow_add(a: i32, b: i32) -> i32 {
     return a + b;
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=//%20src/lib.rs%20%E3%81%AE%E3%81%A9%E3%81%93%E3%81%8B%E3%81%AB%E8%BF%BD%E5%8A%A0%0Apub%20fn%20slow_add%28a%3A%20i32%2C%20b%3A%20i32%29%20-%3E%20i32%20%7B%0A%20%20%20%20//%20Clippy%20%E3%81%AF%20a%20%2B%20b%20%E3%82%92%E6%8E%A8%E5%A5%A8%E3%81%99%E3%82%8B%E3%81%AF%E3%81%9A%0A%20%20%20%20return%20a%20%2B%20b%3B%0A%7D)
 `cargo clippy` を実行すると、以下のような警告が表示されるはずです。
 
 ```text

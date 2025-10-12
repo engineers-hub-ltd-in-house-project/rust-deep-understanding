@@ -44,6 +44,7 @@ fn main() {
     println!("The value of x is: {}", x);
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20main()%20%7B%0A%20%20%20%20let%20x%20%3D%205%3B%0A%20%20%20%20println!(%22The%20value%20of%20x%20is%3A%20%7B%7D%22%2C%20x)%3B%0A%20%20%20%20x%20%3D%206%3B%0A%20%20%20%20println!(%22The%20value%20of%20x%20is%3A%20%7B%7D%22%2C%20x)%3B%0A%7D)
 
 どうなりましたか？おそらく、あなたの画面には `Run` ボタンの代わりに `Compiling` という表示が出て、その下に赤文字でエラーメッセージが表示されたはずです。
 
@@ -88,6 +89,7 @@ fn main() {
     println!("The value of x is: {}", x);
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20main()%20%7B%0A%20%20%20%20let%20mut%20x%20%3D%205%3B%20%2F%2F%20mut%20%E3%82%AD%E3%83%BC%E3%83%AF%E3%83%BC%E3%83%89%E3%82%92%E8%BF%BD%E5%8A%A0%0A%20%20%20%20println!(%22The%20value%20of%20x%20is%3A%20%7B%7D%22%2C%20x)%3B%0A%20%20%20%20x%20%3D%206%3B%20%2F%2F%20OK!%0A%20%20%20%20println!(%22The%20value%20of%20x%20is%3A%20%7B%7D%22%2C%20x)%3B%0A%7D)
 
 今度は成功し、以下のように表示されるはずです。
 
@@ -154,6 +156,7 @@ fn main() {
     println!("Bucket contains: {}", bucket);
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20main()%20%7B%0A%20%20%20%20let%20bucket%3A%20u8%20%3D%20256%3B%0A%20%20%20%20println!(%22Bucket%20contains%3A%20%7B%7D%22%2C%20bucket)%3B%0A%7D)
 
 これを実行すると、コンパイルエラーが発生します。
 
@@ -179,6 +182,7 @@ fn main() {
     println!("Bucket now contains: {}", bucket);
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20main()%20%7B%0A%20%20%20%20let%20mut%20bucket%3A%20u8%20%3D%20255%3B%0A%20%20%20%20println!(%22Bucket%20starts%20with%3A%20%7B%7D%22%2C%20bucket)%3B%0A%20%20%20%20%0A%20%20%20%20bucket%20%3D%20bucket%20%2B%201%3B%0A%20%20%20%20println!(%22Bucket%20now%20contains%3A%20%7B%7D%22%2C%20bucket)%3B%0A%7D)
 
 今度はプログラムが **パニック (panic!)** を起こして終了しました。
 
@@ -213,6 +217,7 @@ fn main() {
     println!("The value of z is: {}", z);
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20main()%20%7B%0A%20%20%20%20let%20x%3A%20i32%20%3D%2010%3B%0A%20%20%20%20let%20y%3A%20i64%20%3D%2020%3B%0A%0A%20%20%20%20let%20z%20%3D%20x%20%2B%20y%3B%0A%20%20%20%20println!(%22The%20value%20of%20z%20is%3A%20%7B%7D%22%2C%20z)%3B%0A%7D)
 
 やはりコンパイルエラーです。
 
@@ -235,6 +240,8 @@ fn main() {
     println!("The value of z is: {}", z);
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20main()%20%7B%0A%20%20%20%20let%20x%3A%20i32%20%3D%2010%3B%0A%20%20%20%20let%20y%3A%20i64%20%3D%2020%3B%0A%0A%20%20%20%20let%20z%20%3D%20(x%20as%20i64)%20%2B%20y%3B%20%2F%2F%20x%20%E3%82%92%20i64%20%E3%81%AB%E5%A4%89%E6%8F%9B%0A%20%20%20%20println!(%22The%20value%20of%20z%20is%3A%20%7B%7D%22%2C%20z)%3B%0A%7D)
+
 これならコンパイルが通り、`30` と表示されます。この一手間が、意図しない型変換によるバグを未然に防いでくれるのです。
 
 ## 3.4 型推論と型アノテーション
@@ -252,6 +259,7 @@ fn main() {
     let y = 2.0;
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20main()%20%7B%0A%20%20%20%20%2F%2F%20%E3%81%93%E3%81%AE%20x%20%E3%81%AF%205%20%E3%81%A8%E3%81%84%E3%81%86%E5%80%A4%E3%81%8B%E3%82%89%E3%80%81%E3%82%B3%E3%83%B3%E3%83%91%E3%82%A4%E3%83%A9%E3%81%8C%E3%80%8Ci32%20%E3%81%8C%E5%A6%A5%E5%BD%93%E3%81%A0%E3%82%8D%E3%81%86%E3%80%8D%E3%81%A8%E6%8E%A8%E8%AB%96%E3%81%97%E3%81%A6%E3%81%8F%E3%82%8C%E3%82%8B%0A%20%20%20%20let%20x%20%3D%205%3B%20%0A%0A%20%20%20%20%2F%2F%20%E3%81%93%E3%81%AE%20y%20%E3%81%AF%202.0%20%E3%81%A8%E3%81%84%E3%81%86%E5%80%A4%E3%81%8B%E3%82%89%E3%80%81%E3%80%8Cf64%20%E3%81%8C%E5%A6%A5%E5%BD%93%E3%81%A0%E3%82%8D%E3%81%86%E3%80%8D%E3%81%A8%E6%8E%A8%E8%AB%96%E3%81%97%E3%81%A6%E3%81%8F%E3%82%8C%E3%82%8B%0A%20%20%20%20let%20y%20%3D%202.0%3B%0A%7D)
 
 しかし、コンパイラが型を判断できない場合や、私たちが特定の型を強制したい場合には、型アノテーションが必要になります。
 
@@ -267,6 +275,7 @@ fn main() {
     println!("The guess is: {}", guess);
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20main()%20%7B%0A%20%20%20%20let%20guess%20%3D%20%2242%22.parse().expect(%22Not%20a%20number!%22)%3B%0A%20%20%20%20println!(%22The%20guess%20is%3A%20%7B%7D%22%2C%20guess)%3B%0A%7D)
 
 これはコンパイルエラーになります。
 
@@ -293,6 +302,7 @@ fn main() {
     println!("The guess is: {}", guess);
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20main()%20%7B%0A%20%20%20%20let%20guess%3A%20u32%20%3D%20%2242%22.parse().expect(%22Not%20a%20number!%22)%3B%0A%20%20%20%20println!(%22The%20guess%20is%3A%20%7B%7D%22%2C%20guess)%3B%0A%7D)
 
 これでコンパイルが通り、`42` と表示されます。
 
@@ -306,6 +316,7 @@ fn main() {
     println!("The guess is: {}", guess);
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20main()%20%7B%0A%20%20%20%20let%20guess%20%3D%20%2242%22.parse%3A%3A%3Cu32%3E().expect(%22Not%20a%20number!%22)%3B%0A%20%20%20%20println!(%22The%20guess%20is%3A%20%7B%7D%22%2C%20guess)%3B%0A%7D)
 
 どちらの書き方でも意味は同じです。現時点では、読みやすいと感じる方を使えば大丈夫です。
 
@@ -329,6 +340,7 @@ fn main() {
     println!("The value of x is: {}", x); // => 6
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20main()%20%7B%0A%20%20%20%20let%20x%20%3D%205%3B%0A%0A%20%20%20%20%2F%2F%20%E3%81%93%E3%81%93%E3%81%A7%E6%96%B0%E3%81%97%E3%81%8F%20let%20%E3%82%92%E4%BD%BF%E3%81%A3%E3%81%A6%20x%20%E3%82%92%E5%AE%A3%E8%A8%80%E3%81%97%E3%81%A6%E3%81%84%E3%82%8B%0A%20%20%20%20let%20x%20%3D%20x%20%2B%201%3B%0A%0A%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20%2F%2F%20%E3%81%93%E3%81%AE%E3%83%96%E3%83%AD%E3%83%83%E3%82%AF%E5%86%85%E3%81%A7%E3%82%82%E3%80%81%E3%81%95%E3%82%89%E3%81%AB%20x%20%E3%82%92%E3%82%B7%E3%83%A3%E3%83%89%E3%83%BC%E3%82%A4%E3%83%B3%E3%82%B0%E3%81%A7%E3%81%8D%E3%82%8B%0A%20%20%20%20%20%20%20%20let%20x%20%3D%20x%20*%202%3B%0A%20%20%20%20%20%20%20%20println!(%22The%20value%20of%20x%20in%20the%20inner%20scope%20is%3A%20%7B%7D%22%2C%20x)%3B%20%2F%2F%20%3D%3E%2012%0A%20%20%20%20%7D%0A%0A%20%20%20%20println!(%22The%20value%20of%20x%20is%3A%20%7B%7D%22%2C%20x)%3B%20%2F%2F%20%3D%3E%206%0A%7D)
 
 ### `mut` とシャドーイングの違いを体験する
 
@@ -346,6 +358,8 @@ fn main() {
     spaces = spaces.len();  // 文字列の長さを代入しようとする (これは数値型)
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20main()%20%7B%0A%20%20%20%20let%20mut%20spaces%20%3D%20%22%20%20%20%22%3B%20%2F%2F%20spaces%20%E3%81%AF%E6%96%87%E5%AD%97%E5%88%97%E5%9E%8B%20(%26str)%0A%20%20%20%20spaces%20%3D%20spaces.len()%3B%20%20%2F%2F%20%E6%96%87%E5%AD%97%E5%88%97%E3%81%AE%E9%95%B7%E3%81%95%E3%82%92%E4%BB%A3%E5%85%A5%E3%81%97%E3%82%88%E3%81%86%E3%81%A8%E3%81%99%E3%82%8B%20(%E3%81%93%E3%82%8C%E3%81%AF%E6%95%B0%E5%80%A4%E5%9E%8B)%0A%7D)
+
 これを実行すると、`mismatched types` エラーが出ます。文字列型の変数に、数値型の値を再代入することはできません。
 
 #### シャドーイングならできること
@@ -360,6 +374,8 @@ fn main() {
     println!("The number of spaces is: {}", spaces);
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20main()%20%7B%0A%20%20%20%20let%20spaces%20%3D%20%22%20%20%20%22%3B%20%2F%2F%20spaces%20%E3%81%AF%20%26str%20%E5%9E%8B%0A%20%20%20%20let%20spaces%20%3D%20spaces.len()%3B%20%2F%2F%20%E6%96%B0%E3%81%97%E3%81%84%20spaces%20%E5%A4%89%E6%95%B0%E3%82%92%E5%AE%A3%E8%A8%80%E3%80%82%E4%BB%8A%E5%BA%A6%E3%81%AF%20usize%20%E5%9E%8B%0A%20%20%20%20%0A%20%20%20%20println!(%22The%20number%20of%20spaces%20is%3A%20%7B%7D%22%2C%20spaces)%3B%0A%7D)
+
 今度はコンパイルが通り、`3` と表示されます。
 
 最初の `spaces` は文字列でしたが、2 行目でその長さを計算した結果 (数値) を、同名の新しい変数 `spaces` に束縛しています。この時点で、最初の文字列の `spaces` は「隠され (shadowed)」、以降 `spaces` という名前は数値型として扱われます。

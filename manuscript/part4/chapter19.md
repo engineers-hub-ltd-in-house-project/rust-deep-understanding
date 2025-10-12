@@ -39,6 +39,7 @@ fn main() {
     // ???
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=//%20src/main.rs%0A%0A//%20---%20client%20%E3%83%A2%E3%82%B8%E3%83%A5%E3%83%BC%E3%83%AB%E7%9B%B8%E5%BD%93%E3%81%AE%E3%82%B3%E3%83%BC%E3%83%89%20---%0Afn%20connect%28%29%20%7B%0A%20%20%20%20println%21%28%22client%3A%3Aconnect%28%29%20called%22%29%3B%0A%7D%0A%0A//%20---%20network%20%E3%83%A2%E3%82%B8%E3%83%A5%E3%83%BC%E3%83%AB%E7%9B%B8%E5%BD%93%E3%81%AE%E3%82%B3%E3%83%BC%E3%83%89%20---%0Amod%20network%20%7B%0A%20%20%20%20fn%20connect%28%29%20%7B%0A%20%20%20%20%20%20%20%20println%21%28%22network%3A%3Aconnect%28%29%20called%22%29%3B%0A%20%20%20%20%7D%0A%7D%0A%0Afn%20main%28%29%20%7B%0A%20%20%20%20//%20client%20%E3%81%AE%20connect%20%E3%82%92%E5%91%BC%E3%81%B3%E3%81%9F%E3%81%84%0A%20%20%20%20connect%28%29%3B%0A%0A%20%20%20%20//%20network%20%E3%81%AE%20connect%20%E3%82%92%E5%91%BC%E3%81%B3%E3%81%9F%E3%81%84%0A%20%20%20%20//%20%3F%3F%3F%0A%7D)
 この時点でも、いくつか問題が見えてきます。
 - トップレベルの `connect` と `network` 内の `connect` のように、名前の衝突が起きやすくなる。
 - `network` の中の `connect` はどうやって呼べばいいのか？（実はこのままだとプライベートなので呼べない）
@@ -70,6 +71,7 @@ pub fn connect() {
     println!("client::connect() called");
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=//%20src/client.rs%0A%0A//%20%E3%81%93%E3%81%AE%E9%96%A2%E6%95%B0%E3%82%92%20main.rs%20%E3%81%8B%E3%82%89%E5%91%BC%E3%81%B9%E3%82%8B%E3%82%88%E3%81%86%E3%81%AB%E3%81%99%E3%82%8B%E3%81%AB%E3%81%AF%20%60pub%60%20%E3%81%8C%E5%BF%85%E8%A6%81%0Apub%20fn%20connect%28%29%20%7B%0A%20%20%20%20println%21%28%22client%3A%3Aconnect%28%29%20called%22%29%3B%0A%7D)
 
 **ステップ 2: `src/main.rs` を修正**
 
@@ -94,6 +96,7 @@ fn main() {
     network::connect();
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=//%20src/main.rs%0A%0A//%20%60src/client.rs%60%20%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E3%82%92%20%60client%60%20%E3%83%A2%E3%82%B8%E3%83%A5%E3%83%BC%E3%83%AB%E3%81%A8%E3%81%97%E3%81%A6%E5%AE%A3%E8%A8%80%E3%81%99%E3%82%8B%0Amod%20client%3B%0A%0Amod%20network%20%7B%0A%20%20%20%20//%20%E3%81%93%E3%81%AE%E9%96%A2%E6%95%B0%E3%82%92%20%60main%60%20%E3%81%8B%E3%82%89%E5%91%BC%E3%81%B9%E3%82%8B%E3%82%88%E3%81%86%E3%81%AB%E3%81%99%E3%82%8B%E3%81%AB%E3%81%AF%20%60pub%60%20%E3%81%8C%E5%BF%85%E8%A6%81%0A%20%20%20%20pub%20fn%20connect%28%29%20%7B%0A%20%20%20%20%20%20%20%20println%21%28%22network%3A%3Aconnect%28%29%20called%22%29%3B%0A%20%20%20%20%7D%0A%7D%0A%0Afn%20main%28%29%20%7B%0A%20%20%20%20//%20client%20%E3%83%A2%E3%82%B8%E3%83%A5%E3%83%BC%E3%83%AB%E3%81%AE%20connect%20%E3%82%92%E5%91%BC%E3%81%B3%E5%87%BA%E3%81%99%0A%20%20%20%20client%3A%3Aconnect%28%29%3B%0A%20%20%20%20%0A%20%20%20%20//%20network%20%E3%83%A2%E3%82%B8%E3%83%A5%E3%83%BC%E3%83%AB%E3%81%AE%20connect%20%E3%82%92%E5%91%BC%E3%81%B3%E5%87%BA%E3%81%99%0A%20%20%20%20network%3A%3Aconnect%28%29%3B%0A%7D)
 `main.rs` で `mod client;` と宣言することで、Rustコンパイラは `src/client.rs` という名前のファイルを探し、その内容を `client` モジュールとして取り込みます。
 
 もし `client.rs` の `connect` 関数から `pub` を外して `cargo run` すると、`function `connect` is private` というコンパイルエラーが発生します。このエラーを体験することで、`pub` がモジュールの公開インターフェースを定義する上でいかに重要かを理解できます。
@@ -118,6 +121,7 @@ fn main() {
     network_connect();
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=//%20src/main.rs%0Amod%20client%3B%0Amod%20network%3B%0A%0A//%20%60use%60%20%E3%81%A7%20%60client%60%20%E3%83%A2%E3%82%B8%E3%83%A5%E3%83%BC%E3%83%AB%E3%81%AE%20%60connect%60%20%E9%96%A2%E6%95%B0%E3%82%92%E3%82%B9%E3%82%B3%E3%83%BC%E3%83%97%E3%81%AB%E5%B0%8E%E5%85%A5%0Ause%20crate%3A%3Aclient%3A%3Aconnect%3B%0A//%20%60as%60%20%E3%81%A7%E5%88%A5%E5%90%8D%E3%82%92%E4%BB%98%E3%81%91%E3%82%8B%E3%81%93%E3%81%A8%E3%82%82%E3%81%A7%E3%81%8D%E3%82%8B%0Ause%20crate%3A%3Anetwork%3A%3Aconnect%20as%20network_connect%3B%0A%0Afn%20main%28%29%20%7B%0A%20%20%20%20//%20%E7%9F%AD%E3%81%84%E5%90%8D%E5%89%8D%E3%81%A7%E5%91%BC%E3%81%B3%E5%87%BA%E3%81%9B%E3%82%8B%0A%20%20%20%20connect%28%29%3B%0A%20%20%20%20network_connect%28%29%3B%0A%7D)
 `crate` はクレートのルート（この場合は `src/main.rs` がいる階層）を指すキーワードです。
 
 ## 19.3 パッケージとクレート

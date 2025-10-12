@@ -59,6 +59,7 @@ fn main() {
     println!("In file '{}'", args.file_path.display());
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=//%20src/main.rs%0Ause%20clap%3A%3AParser%3B%0A%0A///%20%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E3%81%8B%E3%82%89%E7%89%B9%E5%AE%9A%E3%81%AE%E6%96%87%E5%AD%97%E5%88%97%E3%82%92%E5%90%AB%E3%82%80%E8%A1%8C%E3%82%92%E6%A4%9C%E7%B4%A2%E3%81%97%E3%81%BE%E3%81%99%0A%23%5Bderive%28Parser%2C%20Debug%29%5D%0A%23%5Bcommand%28version%2C%20about%2C%20long_about%20%3D%20None%29%5D%0Astruct%20Args%20%7B%0A%20%20%20%20///%20%E6%A4%9C%E7%B4%A2%E3%81%99%E3%82%8B%E6%96%87%E5%AD%97%E5%88%97%0A%20%20%20%20query%3A%20String%2C%0A%0A%20%20%20%20///%20%E6%A4%9C%E7%B4%A2%E5%AF%BE%E8%B1%A1%E3%81%AE%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E3%83%91%E3%82%B9%0A%20%20%20%20file_path%3A%20std%3A%3Apath%3A%3APathBuf%2C%0A%7D%0A%0Afn%20main%28%29%20%7B%0A%20%20%20%20let%20args%20%3D%20Args%3A%3Aparse%28%29%3B%0A%0A%20%20%20%20println%21%28%22Searching%20for%20%27%7B%7D%27%22%2C%20args.query%29%3B%0A%20%20%20%20println%21%28%22In%20file%20%27%7B%7D%27%22%2C%20args.file_path.display%28%29%29%3B%0A%7D)
 この状態で `cargo run` を実行してみましょう。
 
 - `cargo run`: 引数が足りないというエラーと、自動生成されたヘルプメッセージが表示されます。
@@ -103,6 +104,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=//%20src/main.rs%0Ause%20clap%3A%3AParser%3B%0Ause%20std%3A%3Aerror%3A%3AError%3B%0A%0A//%20...%20Args%E6%A7%8B%E9%80%A0%E4%BD%93%E3%81%AE%E5%AE%9A%E7%BE%A9%E3%81%AF%E5%90%8C%E3%81%98%20...%0A%23%5Bderive%28Parser%2C%20Debug%29%5D%0A%23%5Bcommand%28version%2C%20about%2C%20long_about%20%3D%20None%29%5D%0Astruct%20Args%20%7B%0A%20%20%20%20///%20%E6%A4%9C%E7%B4%A2%E3%81%99%E3%82%8B%E6%96%87%E5%AD%97%E5%88%97%0A%20%20%20%20query%3A%20String%2C%0A%20%20%20%20///%20%E6%A4%9C%E7%B4%A2%E5%AF%BE%E8%B1%A1%E3%81%AE%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E3%83%91%E3%82%B9%0A%20%20%20%20file_path%3A%20std%3A%3Apath%3A%3APathBuf%2C%0A%7D%0A%0A%0Afn%20main%28%29%20-%3E%20Result%3C%28%29%2C%20Box%3Cdyn%20Error%3E%3E%20%7B%0A%20%20%20%20let%20args%20%3D%20Args%3A%3Aparse%28%29%3B%0A%0A%20%20%20%20println%21%28%22Searching%20for%20%27%7B%7D%27%22%2C%20args.query%29%3B%0A%20%20%20%20println%21%28%22In%20file%20%27%7B%7D%27%22%2C%20args.file_path.display%28%29%29%3B%0A%0A%20%20%20%20//%20%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E3%81%AE%E5%86%85%E5%AE%B9%E3%82%92%E8%AA%AD%E3%81%BF%E8%BE%BC%E3%82%80%0A%20%20%20%20let%20content%20%3D%20std%3A%3Afs%3A%3Aread_to_string%28%26args.file_path%29%3F%3B%0A%20%20%20%20%0A%20%20%20%20println%21%28%22With%20text%3A%5Cn%7B%7D%22%2C%20content%29%3B%0A%0A%20%20%20%20Ok%28%28%29%29%0A%7D)
 ここで、プロジェクトのルートに `poem.txt` というファイルを作成し、何行かテキストを書いておきましょう。
 
 ```txt
@@ -145,6 +147,7 @@ Pick three.";
     }
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=//%20src/lib.rs%0Apub%20fn%20search%3C%27a%3E%28query%3A%20%26str%2C%20contents%3A%20%26%27a%20str%29%20-%3E%20Vec%3C%26%27a%20str%3E%20%7B%0A%20%20%20%20contents%0A%20%20%20%20%20%20%20%20.lines%28%29%0A%20%20%20%20%20%20%20%20.filter%28%7Cline%7C%20line.contains%28query%29%29%0A%20%20%20%20%20%20%20%20.collect%28%29%0A%7D%0A%0A%23%5Bcfg%28test%29%5D%0Amod%20tests%20%7B%0A%20%20%20%20use%20super%3A%3A%2A%3B%0A%0A%20%20%20%20%23%5Btest%5D%0A%20%20%20%20fn%20one_result%28%29%20%7B%0A%20%20%20%20%20%20%20%20let%20query%20%3D%20%22duct%22%3B%0A%20%20%20%20%20%20%20%20let%20contents%20%3D%20%22%5C%0ARust%3A%0Asafe%2C%20fast%2C%20productive.%0APick%20three.%22%3B%0A%20%20%20%20%20%20%20%20assert_eq%21%28vec%21%5B%22safe%2C%20fast%2C%20productive.%22%5D%2C%20search%28query%2C%20contents%29%29%3B%0A%20%20%20%20%7D%0A%7D)
 
 `main`関数からこの`search`関数を呼び出すように変更します。
 
@@ -176,6 +179,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=//%20src/main.rs%0A//%20...%20use%E6%96%87%E3%81%A8Args%E6%A7%8B%E9%80%A0%E4%BD%93%E5%AE%9A%E7%BE%A9%20...%0Ause%20clap%3A%3AParser%3B%0Ause%20std%3A%3Aerror%3A%3AError%3B%0A//%20mini_grep%E3%82%AF%E3%83%AC%E3%83%BC%E3%83%88%EF%BC%88src/lib.rs%EF%BC%89%E3%81%AEsearch%E9%96%A2%E6%95%B0%E3%82%92%E3%82%A4%E3%83%B3%E3%83%9D%E3%83%BC%E3%83%88%0Ause%20mini_grep%3A%3Asearch%3B%0A%0A%23%5Bderive%28Parser%2C%20Debug%29%5D%0A%23%5Bcommand%28version%2C%20about%2C%20long_about%20%3D%20None%29%5D%0Astruct%20Args%20%7B%0A%20%20%20%20///%20%E6%A4%9C%E7%B4%A2%E3%81%99%E3%82%8B%E6%96%87%E5%AD%97%E5%88%97%0A%20%20%20%20query%3A%20String%2C%0A%20%20%20%20///%20%E6%A4%9C%E7%B4%A2%E5%AF%BE%E8%B1%A1%E3%81%AE%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E3%83%91%E3%82%B9%0A%20%20%20%20file_path%3A%20std%3A%3Apath%3A%3APathBuf%2C%0A%7D%0A%0Afn%20main%28%29%20-%3E%20Result%3C%28%29%2C%20Box%3Cdyn%20Error%3E%3E%20%7B%0A%20%20%20%20let%20args%20%3D%20Args%3A%3Aparse%28%29%3B%0A%20%20%20%20let%20content%20%3D%20std%3A%3Afs%3A%3Aread_to_string%28%26args.file_path%29%3F%3B%0A%0A%20%20%20%20for%20line%20in%20search%28%26args.query%2C%20%26content%29%20%7B%0A%20%20%20%20%20%20%20%20println%21%28%22%7B%7D%22%2C%20line%29%3B%0A%20%20%20%20%7D%0A%0A%20%20%20%20Ok%28%28%29%29%0A%7D)
 
 `cargo test` を実行してライブラリのテストがパスすることを確認し、`cargo run -- are poem.txt` を実行して、"Are you nobody, too?" が表示されることを確認しましょう。
 

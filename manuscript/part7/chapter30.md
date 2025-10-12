@@ -57,6 +57,7 @@ fn main() {
     }
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=//%20cargo%20new%20unsafe-demo%20%E3%81%A7%E3%83%97%E3%83%AD%E3%82%B8%E3%82%A7%E3%82%AF%E3%83%88%E3%82%92%E4%BD%9C%E6%88%90%0Afn%20main%28%29%20%7B%0A%20%20%20%20let%20mut%20num%20%3D%205%3B%0A%0A%20%20%20%20//%20%E5%8F%82%E7%85%A7%E3%81%8B%E3%82%89%E7%94%9F%E3%83%9D%E3%82%A4%E3%83%B3%E3%82%BF%E3%82%92%E4%BD%9C%E6%88%90%E3%81%99%E3%82%8B%E3%81%93%E3%81%A8%E8%87%AA%E4%BD%93%E3%81%AF%E5%AE%89%E5%85%A8%0A%20%20%20%20let%20r1%20%3D%20%26num%20as%20%2Aconst%20i32%3B%0A%20%20%20%20let%20r2%20%3D%20%26mut%20num%20as%20%2Amut%20i32%3B%0A%0A%20%20%20%20//%20println%21%28%22r1%20is%3A%20%7B%7D%22%2C%20%2Ar1%29%3B%20//%20%F0%9F%92%A5%20%E3%82%B3%E3%83%B3%E3%83%91%E3%82%A4%E3%83%AB%E3%82%A8%E3%83%A9%E3%83%BC%EF%BC%81%0A%20%20%20%20//%20error%5BE0133%5D%3A%20dereference%20of%20raw%20pointer%20is%20unsafe%20and%20requires%20unsafe%20function%20or%20block%0A%0A%20%20%20%20//%20%60unsafe%60%20%E3%83%96%E3%83%AD%E3%83%83%E3%82%AF%E3%81%A7%E5%9B%B2%E3%82%80%E3%81%A8%E3%82%B3%E3%83%B3%E3%83%91%E3%82%A4%E3%83%AB%E3%81%8C%E9%80%9A%E3%82%8B%0A%20%20%20%20unsafe%20%7B%0A%20%20%20%20%20%20%20%20println%21%28%22r1%20is%3A%20%7B%7D%22%2C%20%2Ar1%29%3B%0A%20%20%20%20%20%20%20%20println%21%28%22r2%20is%3A%20%7B%7D%22%2C%20%2Ar2%29%3B%0A%20%20%20%20%7D%0A%7D)
 `*r1` の行をコメントアウトしたり外したりして、コンパイラのエラーを確認してみましょう。`unsafe` ブロックは、このデリファレンスが安全であることをプログラマが保証する境界を示しています。
 
 ### 試してみよう2：`unsafe` な関数の呼び出し
@@ -79,6 +80,7 @@ fn main() {
     }
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=//%20C%E3%81%AE%20%60abs%60%20%E9%96%A2%E6%95%B0%E3%82%92FFI%E3%81%A7%E5%91%BC%E3%81%B3%E5%87%BA%E3%81%99%E3%81%A8%E4%BB%AE%E5%AE%9A%0Aextern%20%22C%22%20%7B%0A%20%20%20%20fn%20abs%28input%3A%20i32%29%20-%3E%20i32%3B%0A%7D%0A%0Afn%20main%28%29%20%7B%0A%20%20%20%20//%20let%20result%20%3D%20abs%28-3%29%3B%20//%20%F0%9F%92%A5%20%E3%82%B3%E3%83%B3%E3%83%91%E3%82%A4%E3%83%AB%E3%82%A8%E3%83%A9%E3%83%BC%EF%BC%81%0A%20%20%20%20//%20error%5BE0133%5D%3A%20call%20to%20unsafe%20function%20is%20unsafe%20and%20requires%20unsafe%20function%20or%20block%0A%0A%20%20%20%20unsafe%20%7B%0A%20%20%20%20%20%20%20%20//%20C%E3%81%AE%E9%96%A2%E6%95%B0%E3%82%92%E5%91%BC%E3%81%B3%E5%87%BA%E3%81%99%E3%81%AE%E3%81%AF%20unsafe%0A%20%20%20%20%20%20%20%20println%21%28%22Absolute%20value%20of%20-3%20is%3A%20%7B%7D%22%2C%20abs%28-3%29%29%3B%0A%20%20%20%20%7D%0A%7D)
 FFIで外部のライブラリを呼び出す行為は、Rustコンパイラの保証の範囲外であるため、本質的に `unsafe` です。
 
 ## 30.3 `unsafe` の安全なカプセル化
