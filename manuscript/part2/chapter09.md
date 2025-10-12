@@ -91,8 +91,8 @@ let user2 = User {
 
 ```mermaid
 graph TD
-    A[struct Rectangle { ... }] -- データ --> C(Rectangle 型);
-    B[impl Rectangle { ... }] -- 振る舞い --> C;
+    A["struct Rectangle { ... }"] -- データ --> C("Rectangle 型");
+    B["impl Rectangle { ... }"] -- 振る舞い --> C;
 ```
 
 ```rust

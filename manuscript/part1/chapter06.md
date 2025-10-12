@@ -124,11 +124,11 @@ error[E0382]: borrow of moved value: `s1`
 ```mermaid
 graph TD
     subgraph "Before Move: let s1 = String::from(\"hello\");"
-        Stack1["Stack: s1<br>(ptr, len: 5, cap: 5)"] --> Heap1[Heap: "hello"];
+        Stack1["Stack: s1<br>(ptr, len: 5, cap: 5)"] --> Heap1["Heap: \"hello\""];
     end
     subgraph "After Move: let s2 = s1;"
         Stack1_Moved["Stack: s1<br>INVALID"]
-        Stack2["Stack: s2<br>(ptr, len: 5, cap: 5)"] --> Heap1
+        Stack2["Stack: s2<br>(ptr, len: 5, cap: 5)"] --> Heap1;
     end
 ```
 
