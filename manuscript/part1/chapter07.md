@@ -73,6 +73,29 @@ fn calculate_length(s: &String) -> usize { // s は String への参照
 [Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20main%28%29%20%7B%0A%20%20%20%20let%20s1%20%3D%20String%3A%3Afrom%28%22hello%22%29%3B%0A%0A%20%20%20%20//%20%60%26s1%60%20%E3%81%A7%20s1%20%E3%81%B8%E3%81%AE%E5%8F%82%E7%85%A7%E3%82%92%E4%BD%9C%E6%88%90%E3%81%97%E3%80%81%E9%96%A2%E6%95%B0%E3%81%AB%E6%B8%A1%E3%81%99%0A%20%20%20%20//%20s1%20%E3%81%AE%E6%89%80%E6%9C%89%E6%A8%A9%E3%81%AF%E3%83%A0%E3%83%BC%E3%83%96%E3%81%97%E3%81%AA%E3%81%84%EF%BC%81%0A%20%20%20%20let%20len%20%3D%20calculate_length%28%26s1%29%3B%0A%0A%20%20%20%20//%20s1%20%E3%81%AF%E3%81%BE%E3%81%A0%E6%9C%89%E5%8A%B9%E3%81%AA%E3%81%AE%E3%81%A7%E3%80%81%E5%95%8F%E9%A1%8C%E3%81%AA%E3%81%8F%E4%BD%BF%E3%81%88%E3%82%8B%0A%20%20%20%20println%21%28%22The%20length%20of%20%27%7B%7D%27%20is%20%7B%7D.%22%2C%20s1%2C%20len%29%3B%0A%7D%0A%0A//%20%E9%96%A2%E6%95%B0%E3%81%AE%E5%BC%95%E6%95%B0%E3%81%AE%E5%9E%8B%E3%81%8C%20%60String%60%20%E3%81%8B%E3%82%89%20%60%26String%60%20%E3%81%AB%E5%A4%89%E3%82%8F%E3%81%A3%E3%81%9F%0Afn%20calculate_length%28s%3A%20%26String%29%20-%3E%20usize%20%7B%20//%20s%20%E3%81%AF%20String%20%E3%81%B8%E3%81%AE%E5%8F%82%E7%85%A7%0A%20%20%20%20s.len%28%29%0A%7D%20//%20%E3%81%93%E3%81%93%E3%81%A7%20s%20%E3%81%AF%E3%82%B9%E3%82%B3%E3%83%BC%E3%83%97%E3%82%92%E6%8A%9C%E3%81%91%E3%82%8B%E3%81%8C%E3%80%81%E6%89%80%E6%9C%89%E6%A8%A9%E3%82%92%E6%8C%81%E3%81%A3%E3%81%A6%E3%81%84%E3%81%AA%E3%81%84%E3%81%AE%E3%81%A7%0A%20%20//%20s%20%E3%81%8C%E5%8F%82%E7%85%A7%E3%81%99%E3%82%8B%E5%80%A4%E3%81%AF%E4%BD%95%E3%82%82%E8%B5%B7%E3%81%8D%E3%81%AA%E3%81%84)
 `&s1` という構文で、`s1` の値そのものではなく、`s1` を指す参照を作成しています。`calculate_length` 関数の引数 `s` は `&String` 型となり、`s1` の値を「借用」している状態になります。関数が終了すると参照は無効になりますが、所有者である `s1` には何の影響もありません。
 
+この関係性を図で見てみましょう。
+
+```mermaid
+graph TD
+    subgraph "Stack"
+        subgraph "main() scope"
+            s1["s1 (owner)<br>String<br>(ptr, len, cap)"]
+        end
+        subgraph "calculate_length() scope"
+            s["s (borrower)<br>&String<br>(reference/pointer)"]
+        end
+    end
+
+    subgraph "Heap"
+       HeapData["&quot;hello&quot;"]
+    end
+
+    s1 --> HeapData;
+    s -- "refers to" --> s1;
+```
+
+`calculate_length` 関数のスコープにある `s` は、`s1` が所有するヒープデータを直接指すのではなく、`s1` 自体を指す参照となっています。`s` はデータを「借りて」いるだけで、所有はしていないため、`calculate_length` が終わって `s` がスコープを抜けても、`s1` とそのデータは影響を受けません。
+
 ## 7.3 借用のルールをエラーで学ぶ
 
 借用は非常に便利ですが、安全性を保証するためにコンパイラが厳密にチェックする2つの重要なルール（通称：貸し出しルール）があります。これは、C/C++で頻発したデータ競合（複数のポインタが同じデータにアクセスし、少なくとも一つが書き込みを行うことで発生するバグ）を防ぐためのものです。
