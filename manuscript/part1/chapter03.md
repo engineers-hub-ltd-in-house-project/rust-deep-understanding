@@ -244,6 +244,69 @@ fn main() {
 
 これならコンパイルが通り、`30` と表示されます。この一手間が、意図しない型変換によるバグを未然に防いでくれるのです。
 
+### キャストが使われる様々な場面
+
+`as`キーワードによるキャストは、異なる数値型を計算する場面以外にも、様々な状況で利用されます。いくつかの典型的な例を見てみましょう。
+
+#### 1. 異なるサイズの整数型間の変換
+
+これは先ほどの例でも見た、最も一般的なキャストの使われ方です。`i32` を `i64` に変換したり、その逆を行ったりします。
+
+```rust
+fn main() {
+    let a: i32 = 10;
+    let b: i64 = a as i64; // i32からi64へキャスト
+
+    println!("a: {}, b: {}", a, b);
+
+    let c: i64 = 100;
+    // より大きな型から小さな型へキャストする場合、値が収まらない可能性があるため注意が必要です。
+    // この例では100はi32に収まるので問題ありません。
+    let d: i32 = c as i32;
+
+    println!("c: {}, d: {}", c, d);
+}
+```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20main()%20%7B%0A%20%20%20%20let%20a%3A%20i32%20%3D%2010%3B%0A%20%20%20%20let%20b%3A%20i64%20%3D%20a%20as%20i64%3B%0A%20%20%20%20println!(%22a%3A%20%7B%7D%2C%20b%3A%20%7B%7D%22%2C%20a%2C%20b)%3B%0A%0A%20%20%20%20let%20c%3A%20i64%20%3D%20100%3B%0A%20%20%20%20let%20d%3A%20i32%20%3D%20c%20as%20i32%3B%0A%20%20%20%20println!(%22c%3A%20%7B%7D%2C%20d%3A%20%7B%7D%22%2C%20c%2C%20d)%3B%0A%7D)
+
+注意点: 大きなサイズの型から小さなサイズの型へキャストする場合（例: `i64` -> `i32`）、元の値が変換先の型の範囲に収まらないと、オーバーフローが発生し、予期しない値になる可能性があります。
+
+#### 2. 整数型と浮動小数点数型間の変換
+
+計算の過程で、整数を浮動小数点数として扱いたい場合や、その逆の場合にキャストを使用します。
+
+```rust
+fn main() {
+    let integer_value: i32 = 5;
+    let float_value: f64 = integer_value as f64; // i32からf64へ
+
+    println!("integer: {}, float: {}", integer_value, float_value);
+
+    let float_value_2: f64 = 3.14;
+    // 浮動小数点数から整数へキャストすると、小数点以下は切り捨てられます。
+    let integer_value_2: i32 = float_value_2 as i32;
+
+    println!("float: {}, integer: {}", float_value_2, integer_value_2); // 結果は3になります
+}
+```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20main()%20%7B%0A%20%20%20%20let%20integer_value%3A%20i32%20%3D%205%3B%0A%20%20%20%20let%20float_value%3A%20f64%20%3D%20integer_value%20as%20f64%3B%0A%0A%20%20%20%20println!(%22integer%3A%20%7B%7D%2C%20float%3A%20%7B%7D%22%2C%20integer_value%2C%20float_value)%3B%0A%0A%20%20%20%20let%20float_value_2%3A%20f64%20%3D%203.14%3B%0A%20%20%20%20let%20integer_value_2%3A%20i32%20%3D%20float_value_2%20as%20i32%3B%0A%0A%20%20%20%20println!(%22float%3A%20%7B%7D%2C%20integer%3A%20%7B%7D%22%2C%20float_value_2%2C%20integer_value_2)%3B%0A%7D)
+
+#### 3. 数値型と文字型 (`char`) の変換
+
+`u8` 型の数値を `char` 型に変換して、対応する文字を取得することができます。これは ASCII コードなどを扱う際に便利です。
+
+```rust
+fn main() {
+    let number: u8 = 65; // ASCIIコードで 'A'
+    let character: char = number as char;
+
+    println!("number: {}, character: '{}'", number, character);
+}
+```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20main()%20%7B%0A%20%20%20%20let%20number%3A%20u8%20%3D%2065%3B%0A%20%20%20%20let%20character%3A%20char%20%3D%20number%20as%20char%3B%0A%0A%20%20%20%20println!(%22number%3A%20%7B%7D%2C%20character%3A%20%27%7B%7D%27%22%2C%20number%2C%20character)%3B%0A%7D)
+
+注意点: `u8` から `char` へのキャストは有効な UTF-8 シーケンスである場合にのみ正しく機能します。
+
 ## 3.4 型推論と型アノテーション
 
 これまでの例で、`let x = 5;` のように書いたり `let bucket: u8 = 255;` のように書いたりしましたね。この `: u8` の部分を **型アノテーション (type annotation)** と呼びます。
