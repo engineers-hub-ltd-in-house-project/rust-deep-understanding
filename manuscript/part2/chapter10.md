@@ -21,6 +21,72 @@ Python や Go には、値が存在しない可能性を示すための便利な
 
 あなたも、このようなエラーに遭遇し、頭を抱えた経験が一度はあるのではないでしょうか？
 
+### Go と Python で「痛み」を体験する
+
+言葉だけでは実感が湧きにくいかもしれません。Go と Python、それぞれの言語でこの「`nil`/`None` チェック漏れ」が引き起こす問題を、オンラインの Playground で実際に体験してみましょう。
+
+#### Go の例： nil ポインタの参照外し
+
+以下のコードは、ユーザーを見つけられなかった場合に `nil` を返す可能性がある関数を呼び出します。`nil` である可能性をチェックし忘れるとどうなるでしょうか。
+
+```go
+package main
+
+import "fmt"
+
+type User struct {
+    Name string
+}
+
+// findUser はユーザーを見つけられない場合に nil を返す可能性がある
+func findUser(name string) *User {
+    if name == "Alice" {
+        return &User{Name: "Alice"}
+    }
+    return nil // Bob は見つからない
+}
+
+func main() {
+    // "Bob" を探すが、見つからないため nil が返される
+    u := findUser("Bob")
+
+    // nil チェックを忘れてフィールドにアクセスしようとする
+    // これがパニックを引き起こす！
+    fmt.Println("User's name:", u.Name)
+}
+```
+[このコードを Go Playground で試す](https://go.dev/play/)
+
+このコードを Go Playground に貼り付けて実行すると、まさに先ほど見た `panic: runtime error: invalid memory address or nil pointer dereference` というエラーでプログラムがクラッシュするのが確認できます。
+
+#### Python の例： NoneType への属性アクセス
+
+Pythonでも同様です。`None` が返ってくる可能性を忘れると、`AttributeError` が発生します。
+
+```python
+class User:
+    def __init__(self, name):
+        self.name = name
+
+# find_user はユーザーを見つけられない場合に None を返す可能性がある
+def find_user(name):
+    if name == "Alice":
+        return User("Alice")
+    return None # Bob は見つからない
+
+# "Bob" を探すが、見つからないため None が返される
+u = find_user("Bob")
+
+# None チェックを忘れて属性にアクセスしようとする
+# これが AttributeError を引き起こす！
+print(f"User's name: {u.name}")
+```
+[このコードを Online Python Compiler で試す](https://www.online-python.com/)
+
+こちらも同様に実行すると、`AttributeError: 'NoneType' object has no attribute 'name'` というお馴染みのエラーが発生します。
+
+これらの「うっかり」による実行時エラーは、プロジェクトが大規模で複雑になるほど発見が難しくなり、深刻なバグの原因となります。
+
 Rust は、この問題を **型システム** のレベルで解決します。「値が存在しないかもしれない」という可能性を、実行時ではなく **コンパイル時** にプログラマに強制的に意識させるのです。その中心的な役割を果たすのが、**列挙型 (`enum`)** と、その代表例である **`Option<T>`** です。
 
 ## 10.2 列挙型 (`enum`)：可能性を列挙する
