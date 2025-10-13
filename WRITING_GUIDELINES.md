@@ -57,6 +57,39 @@ ASCII 文字 (英数字、記号、コード片) とマルチバイト文字 (�
 - 構文チェック: `Mermaid` の図を原稿に含める際は、コミット前に必ずローカル環境のプレビュー機能や `mmdc` (Mermaid CLI) などのツールを用いて構文エラーがないことを確認します。
 - 引用符の使用: ラベルやタイトルにバッククォート (` `) などの特殊文字やスペースが含まれる場合は、必ずダブルクォーテーション (`"`) で囲み、パースエラーを防ぎます。
 
+## 4. 外部リンクに関するルール
+
+GitHub の Markdown レンダリングには URL 長制限があり、適切な対処が必要です。
+
+### 4.1 GitHub の URL 長制限
+
+- 制限値: GitHub は Markdown 内のリンク URL に対して 4096 文字の長さ制限を設けています。
+- 影響: この制限を超える URL はハイパーリンクとして正しくレンダリングされず、プレーンテキストとして表示されます。
+- 特に問題となるケース: Rust Playground などのコード共有サービスで、コード全体を URL パラメータにエンコードした長い URL は、この制限を容易に超えます。
+
+### 4.2 Rust Playground リンクの対処方法
+
+Rust Playground のリンクを含める場合は、必ず以下の手順で短縮 URL (permalink) を使用します。
+
+1. Rust Playground でコードを記述後、画面上部の「Share」ボタンをクリック
+2. 表示される「Permalink to the playground」の短縮 URL をコピー
+3. この短縮 URL (形式: `https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=XXXXX`) を使用
+
+**良い例** (短縮 URL):
+```markdown
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=36c846b4883adbc11620b48f6f42e440)
+```
+
+**悪い例** (長いエンコード URL):
+```markdown
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=use%20std%3A%3Arc%3A%3ARc%3B%0A%0Aenum%20List%20%7B%0A%20%20%20%20Cons...)
+```
+
+### 4.3 その他の外部リンク
+
+- URL 短縮サービスの使用: 他のサービスで長い URL が必要な場合は、bit.ly や tinyurl などの URL 短縮サービスの使用を検討します。
+- HTML タグの使用は無効: `<a href="...">` タグを使用しても同じ制限が適用されるため、解決策にはなりません。
+
 ---
 
 このドキュメントは、必要に応じて更新されます。
