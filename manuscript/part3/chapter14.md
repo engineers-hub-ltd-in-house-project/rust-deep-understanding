@@ -52,7 +52,7 @@ fn main() {
 - **コードの重複**: `summarize_...` という似たような関数が型の数だけ増えていきます。
 - **拡張性の欠如**: タイムラインに新しい種類のアイテム（例えばブログ投稿）を追加するたびに、新しい `summarize_...` 関数を作り、タイムラインを表示するロジックも修正しなければなりません。
 
-この問題をエレガントに解決するのが **トレイト (Trait)** です。
+この問題をエレガントに解決するのが トレイト (Trait) です。
 
 ## 14.2 解決策：`trait` で振る舞いを定義する
 
@@ -114,7 +114,7 @@ fn main() {
 }
 ```
 [Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=//%20%60item%60%20%E3%81%AF%20%60Summary%60%20%E3%83%88%E3%83%AC%E3%82%A4%E3%83%88%E3%82%92%E5%AE%9F%E8%A3%85%E3%81%97%E3%81%9F%E4%BB%BB%E6%84%8F%E3%81%AE%E5%9E%8B%E3%81%AE%E4%B8%8D%E5%A4%89%E5%8F%82%E7%85%A7%0Apub%20fn%20notify%28item%3A%20%26impl%20Summary%29%20%7B%0A%20%20%20%20println%21%28%22Breaking%20news%21%20%7B%7D%22%2C%20item.summarize%28%29%29%3B%0A%7D%0A%0Afn%20main%28%29%20%7B%0A%20%20%20%20let%20tweet%20%3D%20Tweet%20%7B%0A%20%20%20%20%20%20%20%20username%3A%20String%3A%3Afrom%28%22horse_ebooks%22%29%2C%0A%20%20%20%20%20%20%20%20content%3A%20String%3A%3Afrom%28%22of%20course%2C%20as%20you%20probably%20already%20know%2C%20people%22%29%2C%0A%20%20%20%20%7D%3B%0A%0A%20%20%20%20let%20article%20%3D%20NewsArticle%20%7B%0A%20%20%20%20%20%20%20%20headline%3A%20String%3A%3Afrom%28%22Penguins%20win%20the%20Stanley%20Cup%20Championship%21%22%29%2C%0A%20%20%20%20%20%20%20%20author%3A%20String%3A%3Afrom%28%22Iceburgh%22%29%2C%0A%20%20%20%20%7D%3B%0A%0A%20%20%20%20//%20notify%20%E9%96%A2%E6%95%B0%E3%81%AF%20Tweet%20%E3%81%A8%20NewsArticle%20%E3%81%AE%E4%B8%A1%E6%96%B9%E3%82%92%E5%8F%97%E3%81%91%E5%8F%96%E3%82%8C%E3%82%8B%EF%BC%81%0A%20%20%20%20notify%28%26tweet%29%3B%0A%20%20%20%20notify%28%26article%29%3B%0A%7D)
-`summarize_tweet` と `summarize_article` という個別の関数はもう必要ありません。`notify` 関数は、`summarize` メソッドを持つ型なら何でも受け取ってくれます。これがトレイトによる **ポリモーフィズム（多態性）** です。新しいアイテム（ブログ投稿など）を追加したくなったら、その構造体に `Summary` トレイトを実装するだけで、`notify` 関数はそのまま再利用できます。
+`summarize_tweet` と `summarize_article` という個別の関数はもう必要ありません。`notify` 関数は、`summarize` メソッドを持つ型なら何でも受け取ってくれます。これがトレイトによる ポリモーフィズム（多態性） です。新しいアイテム（ブログ投稿など）を追加したくなったら、その構造体に `Summary` トレイトを実装するだけで、`notify` 関数はそのまま再利用できます。
 
 ## 14.3 デフォルト実装
 

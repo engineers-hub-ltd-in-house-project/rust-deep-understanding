@@ -19,7 +19,7 @@ Rust の制御構文も見た目は似ていますが、一つ大きな違いが
 
 ## 4.2 `if` は文ではなく「式」
 
-Python や Go との大きな違いは、Rust の `if` が文 (Statement) ではなく、値を返すことができる 式 (Expression) である点です。
+Python や Go との大きな違いは、Rust の `if` が文 (Statement) ではなく、値を返すことができる式 (Expression) である点です。
 
 ### 試してみよう：`if` の結果を変数に入れる
 
