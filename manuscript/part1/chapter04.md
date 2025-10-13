@@ -23,7 +23,11 @@ Python や Go との大きな違いは、Rust の `if` が文 (Statement) では
 
 ### 試してみよう：`if` の結果を変数に入れる
 
-`if` が値を返すとはどういうことか、`cargo new controlflow` で新しいプロジェクトを作って試してみましょう。`src/main.rs` に以下を記述して `cargo run` してください。
+`if` が値を返すとはどういうことか、
+```sh
+cargo new controlflow
+```
+で新しいプロジェクトを作って試してみましょう。`src/main.rs` に以下を記述して `cargo run` してください。
 
 ```rust
 fn main() {

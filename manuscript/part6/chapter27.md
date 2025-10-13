@@ -18,7 +18,10 @@
 
 ## 27.2 プロジェクト：CSVデータのフィルタリング
 
-`cargo new csv-processor` でプロジェクトを作成し、必要なクレートを `Cargo.toml` に追加します。`csv` と `serde` はデータ処理の鉄板コンビです。
+```sh
+cargo new csv-processor
+```
+でプロジェクトを作成し、必要なクレートを `Cargo.toml` に追加します。`csv` と `serde` はデータ処理の鉄板コンビです。
 
 ```toml
 # Cargo.toml

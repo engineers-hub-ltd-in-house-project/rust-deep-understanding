@@ -44,7 +44,10 @@ fn another_function(x: i32, unit_label: char) {
 
 ### 試してみよう：セミコロンの有無
 
-`cargo new functions` で新しいプロジェクトを作り、`src/main.rs` でこの違いを体験してみましょう。
+```sh
+cargo new functions
+```
+で新しいプロジェクトを作り、`src/main.rs` でこの違いを体験してみましょう。
 
 ```rust
 fn main() {

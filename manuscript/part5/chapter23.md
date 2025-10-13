@@ -25,13 +25,10 @@ Rustの非同期プログラミングの核心は `Future` トレイトです。
 
 ### 試してみよう：`async` 関数を呼び出しても何も起こらないことを体験する
 
-`cargo new async-basics` でプロジェクトを作り、`Cargo.toml` に `tokio` を追加します。
-
-```toml
-# Cargo.toml
-[dependencies]
-tokio = { version = "1", features = ["full"] }
+```sh
+cargo new async-basics
 ```
+でプロジェクトを作り、`Cargo.toml` に `tokio` を追加します。
 
 そして、`async` 関数を定義して、普通の関数と同じように呼び出してみましょう。
 

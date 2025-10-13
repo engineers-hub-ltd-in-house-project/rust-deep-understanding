@@ -32,7 +32,15 @@ Rust の変数に関する最も大きな特徴は、デフォルトで不変 (I
 
 ### まずは動かして、エラーを体験する
 
-まずは `cargo new variables` で新しいプロジェクトを作り、`src/main.rs` に以下のコードを貼り付けて `cargo run` で実行してみましょう。これが本書における基本的な学習サイクルになります。
+まずは
+```sh
+cargo new variables
+```
+で新しいプロジェクトを作り、`src/main.rs` に以下のコードを貼り付けて
+```sh
+cargo run
+```
+で実行してみましょう。これが本書における基本的な学習サイクルになります。
 
 (第2章でセットアップした `evcxr` のようなREPLツールや、手軽な [Rust Playground](https://play.rust-lang.org/) を使って試しても構いません)
 

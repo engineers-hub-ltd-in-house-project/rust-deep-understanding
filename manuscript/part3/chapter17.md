@@ -28,7 +28,10 @@
 
 Lispのような言語でよく使われる `Cons` リストというデータ構造を `enum` で定義しようとすると、`Box<T>` の必要性がよくわかります。`Cons` リストは、「値」と「次のリストへの参照」で構成されます。
 
-`cargo new smart_pointers` でプロジェクトを作り、試してみましょう。
+```sh
+cargo new smart_pointers
+```
+でプロジェクトを作り、試してみましょう。
 
 ```rust
 // src/main.rs

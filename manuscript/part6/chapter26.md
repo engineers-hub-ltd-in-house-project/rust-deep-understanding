@@ -17,7 +17,10 @@ CLIツールと並び、Webアプリケーション（特にバックエンドAP
 
 ## 26.2 プロジェクトの準備と「Hello, World」
 
-`cargo new web-api-server` でプロジェクトを作成し、必要なクレートを `Cargo.toml` に追加します。
+```sh
+cargo new web-api-server
+```
+でプロジェクトを作成し、必要なクレートを `Cargo.toml` に追加します。
 
 ```toml
 # Cargo.toml

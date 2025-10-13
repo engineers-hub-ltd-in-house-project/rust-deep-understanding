@@ -16,7 +16,10 @@
 
 ## 24.2 TCPエコーサーバーの構築
 
-`cargo new async-echo-server` でプロジェクトを作り、`Cargo.toml` に `tokio` を追加しましょう。
+```sh
+cargo new async-echo-server
+```
+でプロジェクトを作り、`Cargo.toml` に `tokio` を追加しましょう。
 
 ```toml
 # Cargo.toml

@@ -22,7 +22,10 @@ Rust のアプローチは、Go のように戻り値でエラーを表現しつ
 
 ### 試してみよう：プログラムをパニックさせる
 
-`cargo new errors` でプロジェクトを作り、`src/main.rs` に以下を記述してください。
+```sh
+cargo new errors
+```
+でプロジェクトを作り、`src/main.rs` に以下を記述してください。
 
 ```rust
 // src/main.rs
