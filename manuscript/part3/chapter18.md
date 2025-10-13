@@ -1,142 +1,169 @@
-# 第 18 章：共有所有と内部可変性 `Rc<T>` と `RefCell<T>`
+# 第 18 章：スマートポインタ：`Box<T>` でヒープにデータを置く
 
 ## この章のゴール
-- `Box<T>` の単一所有権では表現できないデータ構造（例：グラフ）を示し、`Rc<T>` による共有所有の必要性を説明できる。
-- `Rc::clone` と `Rc::strong_count` を使い、参照カウントがどのように機能するかを追体験する。
-- 共有されたデータを変更しようとするとコンパイルエラーになることを体験し、「内部可変性」の必要性を説明できる。
-- `RefCell<T>` の `.borrow_mut()` を使って共有データを変更し、意図的に借用ルールを破って実行時パニックを引き起こせる。
+- スタックとヒープの違い、およびそれぞれのデータがどのような場合に適しているかを説明できる。
+- `Box<T>` を使って、コンパイル時にサイズが確定しない再帰的なデータ構造（例：Cons リスト）を定義できる。
+- `Deref` トレイトが、スマートポインタが通常の参照のように振る舞う仕組みの裏側にあることを説明できる。
 
 ---
 
-## 18.1 問題設定(1)：所有者が一人では困る場面
+## 18.1 所有権とポインタの復習
 
-前の章で学んだ `Box<T>` は、データに対する **唯一の** 所有権を表現するのに非常に便利です。しかし、時には複数の所有者が必要になる場合があります。
+これまでの章で、所有権、借用、参照について学んできました。`&` で作成する参照は、データを指し示す一種のポインタですが、所有権は持ちません。
 
-例えば、`Cons` リストで、2つの異なるリストが同じ後続リストを共有するケースを考えてみましょう。
+この章から数章にわたって、参照とは異なる種類のポインタである **スマートポインタ** を探求します。スマートポインタは、単にメモリアドレスを指すだけでなく、追加のメタデータや能力を持つ `struct` です。
+
+## 18.2 なぜ `Box<T>` が必要なのか？：ヒープへのデータ配置
+
+最もシンプルなスマートポインタは `Box<T>` です。`Box<T>` を使うと、データをスタックではなく **ヒープ** に配置することができます。
+
+- **スタック**: 高速。関数呼び出しと共に確保され、関数から抜けると自動的に解放される。サイズが固定でなければならない。
+- **ヒープ**: やや低速。OSに明示的にメモリ領域を要求し、使い終わったら解放する必要がある。サイズが可変、またはコンパイル時に不明なデータを置くことができる。
+
+`Box<T>` は、コンパイル時にサイズが分からないデータを扱う場合や、大きなデータを所有権をムーブさせずに転送したい場合（コピーのコストを避けるため）に特に役立ちます。
+
+### 試してみよう：`Box<T>` でヒープに `i32` を置く
+
+```rust
+// src/main.rs
+
+fn main() {
+    let a = Box::new(5);
+    println!("Box 'a' created with value: {}", *a);
+
+    let b = Box::new(10);
+    println!("Box 'b' created with value: {}", *b);
+
+    println!("--- End of main scope ---");
+} // a と b はここでスコープを抜ける
+```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=//%20src/main.rs%0A%0Afn%20main()%20%7B%0A%20%20%20%20let%20a%20%3D%20Box%3A%3Anew(5)%3B%0A%20%20%20%20println%21%28%22Box%20%27a%27%20created%20with%20value%3A%20%7B%7D%22%2C%20%2Aa%29%3B%0A%20%20%20%20%0A%20%20%20%20let%20b%20%3D%20Box%3A%3Anew(10)%3B%0A%20%20%20%20println%21%28%22Box%20%27b%27%20created%20with%20value%3A%20%7B%7D%22%2C%20%2Ab%29%3B%0A%0A%20%20%20%20println%21%28%22---%20End%20of%20main%20scope%20---%22%29%3B%0A%7D%20//%20a%20%E3%81%A8%20b%20%E3%81%AF%E3%81%93%E3%81%93%E3%81%A7%E3%82%B9%E3%82%B3%E3%83%BC%E3%83%97%E3%82%92%E6%8A%9C%E3%81%91%E3%82%8B)
+
+これを実行すると、`main` 関数が終了するタイミングで、変数が作られたのとは **逆の順番** で `drop` が呼ばれることがわかります。
+
+```text
+Box 'a' created with value: 5
+Box 'b' created with value: 10
+--- End of main scope ---
+```
+
+このように、`Box<T>` はヒープ上のデータへの所有者として振る舞い、所有権のルールも通常通り適用されます。`b` がスコープを抜ける際に、`Box<T>` のデストラクタが呼ばれ、ヒープのメモリ（`5`が格納されている領域）が自動的に解放されます。これがRAII（Resource Acquisition Is Initialization）の力です。
+
+## 18.3 `Box<T>` の具体的なユースケース：再帰的なデータ構造
+
+`Box<T>` の最も重要なユースケースの一つが、**再帰的なデータ構造** の定義です。
+
+Lispのような言語でよく使われる `Cons` リストというデータ構造を `enum` で定義しようとすると、`Box<T>` の必要性がよくわかります。`Cons` リストは、「値」と「次のリストへの参照」で構成されます。
 
 ```sh
-cargo new rc_refcell
+cargo new smart_pointers
 ```
 でプロジェクトを作り、試してみましょう。
 
 ```rust
 // src/main.rs
+
+// このコードはコンパイルエラーになる！
 enum List {
-    Cons(i32, Box<List>),
+    Cons(i32, List),
+    Nil,
+}
+
+fn main() {
+    let list = List::Cons(1, List::Cons(2, List::Cons(3, List::Nil)));
+}
+```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=//%20src/main.rs%0A%0A//%20%E3%81%93%E3%81%AE%E3%82%B3%E3%83%BC%E3%83%89%E3%81%AF%E3%82%B3%E3%83%B3%E3%83%91%E3%82%A4%E3%83%AB%E3%82%A8%E3%83%A9%E3%83%BC%E3%81%AB%E3%81%AA%E3%82%8B%EF%BC%81%0Aenum%20List%20%7B%0A%20%20%20%20Cons%28i32%2C%20List%29%2C%0A%20%20%20%20Nil%2C%0A%7D%0A%0Afn%20main%28%29%20%7B%0A%20%20%20%20let%20list%20%3D%20List%3A%3ACons%281%2C%20List%3A%3ACons%282%2C%20List%3A%3ACons%283%2C%20List%3A%3ANil%29%29%29%3B%0A%7D)
+
+これをコンパイルすると、コンパイラは混乱してしまいます。
+
+```text
+error[E0072]: recursive type `List` has infinite size
+ --> src/main.rs:2:1
+  |
+2 | enum List {
+  | ^^^^^^^^^ recursive type has infinite size
+3 |     Cons(i32, List),
+  |               ---- recursive without indirection
+  |
+help: insert some indirection (e.g., a `Box`, `Rc`, or `&`) to break the cycle
+  |
+3 |     Cons(i32, Box<List>),
+  |               ++++    +
+```
+
+コンパイラは、`List` のサイズを計算できません。`List` は `Cons` を含み、その `Cons` は `List` を含み...というように、無限に続いてしまうためです。
+
+ここで `Box<T>` の出番です。`Box<T>` はポインタなので、そのサイズは常に固定です（中身のデータサイズに関わらず、メモリアドレスを格納する分だけ）。`List` の定義を `Box<List>` に変更することで、コンパイラは `List` のサイズを計算できるようになります。
+
+```rust
+// src/main.rs
+
+enum List {
+    Cons(i32, Box<List>), // List の代わりに Box<List> を使う
     Nil,
 }
 
 use List::{Cons, Nil};
 
 fn main() {
-    let a = Cons(5, Box::new(Cons(10, Box::new(Nil))));
-    // `a` の一部を共有したい
-    let b = Cons(3, Box::new(a)); // `a` は `b` にムーブされる
-    let c = Cons(4, Box::new(a)); // エラー！ `a` は既にムーブされている
+    let list = Cons(1, Box::new(Cons(2, Box::new(Cons(3, Box::new(Nil))))));
 }
 ```
-[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=%2F%2F%20src%2Fmain.rs%0Aenum%20List%20%7B%0A%20%20%20%20Cons(i32%2C%20Box%3CList%3E)%2C%0A%20%20%20%20Nil%2C%0A%7D%0A%0Ause%20List%3A%3A%7BCons%2C%20Nil%7D%3B%0A%0Afn%20main()%20%7B%0A%20%20%20%20let%20a%20%3D%20Cons(5%2C%20Box%3A%3Anew(Cons(10%2C%20Box%3A%3Anew(Nil))))%3B%0A%20%20%20%20%2F%2F%20%60a%60%20%E3%81%AE%E4%B8%80%E9%83%A8%E3%82%92%E5%85%B1%E6%9C%89%E3%81%97%E3%81%9F%E3%81%84%0A%20%20%20%20let%20b%20%3D%20Cons(3%2C%20Box%3A%3Anew(a))%3B%20%2F%2F%20%60a%60%20%E3%81%AF%20%60b%60%20%E3%81%AB%E3%83%A0%E3%83%BC%E3%83%96%E3%81%95%E3%82%8C%E3%82%8B%0A%20%20%20%20let%20c%20%3D%20Cons(4%2C%20Box%3A%3Anew(a))%3B%20%2F%2F%20%E3%82%A8%E3%83%A9%E3%83%BC%EF%BC%81%20%60a%60%20%E3%81%AF%E6%97%A2%E3%81%AB%E3%83%A0%E3%83%BC%E3%83%96%E3%81%95%E3%82%8C%E3%81%A6%E3%81%84%E3%82%8B%0A%7D)
-`a` は `b` を作った時点で所有権がムーブされてしまうため、`c` で再び `a` を使おうとするとコンパイルエラーになります。これを解決するのが **`Rc<T>` (Reference Counting)** です。
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=//%20src/main.rs%0A%0Aenum%20List%20%7B%0A%20%20%20%20Cons%28i32%2C%20Box%3CList%3E%29%2C%20//%20List%20%E3%81%AE%E4%BB%A3%E3%82%8F%E3%82%8A%E3%81%AB%20Box%3CList%3E%20%E3%82%92%E4%BD%BF%E3%81%86%0A%20%20%20%20Nil%2C%0A%7D%0A%0Ause%20List%3A%3A%7BCons%2C%20Nil%7D%3B%0A%0Afn%20main%28%29%20%7B%0A%20%20%20%20let%20list%20%3D%20Cons%281%2C%20Box%3A%3Anew%28Cons%282%2C%20Box%3A%3Anew%28Cons%283%2C%20Box%3A%3Anew%28Nil%29%29%29%29%29%29%3B%0A%7D)
 
-## 18.2 解決策(1)：`Rc<T>` で所有権を共有する
+これで、ネストしたリスト構造をヒープ上に構築することができました。
 
-`Rc<T>` は、単一スレッド内で、あるデータに対する複数の所有者を可能にするスマートポインタです。`Rc<T>` は、自身が何回クローンされたかを常にカウントしており（参照カウント）、このカウントがゼロになった時に初めてヒープ上のデータを解放します。
+## 18.4 `Deref` トレイトによる参照外し
 
-### 試してみよう：参照カウントを可視化する
-
-`Rc::clone()` は、データのディープコピーではなく、ポインタをコピーして参照カウントを1増やすだけの軽量な操作です。その様子を `Rc::strong_count` で観察してみましょう。
+スマートポインタが「ポインタのように」振る舞えるのは、`Deref` トレイトを実装しているからです。`Deref` トレイトを実装すると、`*` 演算子（参照外し演算子）の挙動をカスタマイズできます。
 
 ```rust
-use std::rc::Rc;
+// src/main.rs
 
-enum List {
-    Cons(i32, Rc<List>),
-    Nil,
+struct MySmartPointer {
+    data: String,
 }
 
-use List::{Cons, Nil};
+// Drop トレイトを実装
+impl Drop for MySmartPointer {
+    fn drop(&mut self) {
+        println!("Dropping MySmartPointer with data `{}`!", self.data);
+    }
+}
 
 fn main() {
-    let a = Rc::new(Cons(5, Rc::new(Cons(10, Rc::new(Nil)))));
-    println!("Count after creating a = {}", Rc::strong_count(&a)); // => 1
+    let a = MySmartPointer { data: "hello".to_string() };
+    println!("MySmartPointer 'a' created.");
+    
+    let b = MySmartPointer { data: "world".to_string() };
+    println!("MySmartPointer 'b' created.");
 
-    // `Rc::clone` を使う。`a.clone()` と書いても同じ。
-    let b = Cons(3, Rc::clone(&a));
-    println!("Count after creating b = {}", Rc::strong_count(&a)); // => 2
-
-    {
-        let c = Cons(4, Rc::clone(&a));
-        println!("Count after creating c = {}", Rc::strong_count(&a)); // => 3
-    } // `c` がスコープを抜けるとカウントが減る
-
-    println!("Count after c goes out of scope = {}", Rc::strong_count(&a)); // => 2
-}
+    println!("--- End of main scope ---");
+} // a と b はここでスコープを抜ける
 ```
-[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=use%20std%3A%3Arc%3A%3ARc%3B%0A%0Aenum%20List%20%7B%0A%20%20%20%20Cons(i32%2C%20Rc%3CList%3E)%2C%0A%20%20%20%20Nil%2C%0A%7D%0A%0Ause%20List%3A%3A%7BCons%2C%20Nil%7D%3B%0A%0Afn%20main()%20%7B%0A%20%20%20%20let%20a%20%3D%20Rc%3A%3Anew(Cons(5%2C%20Rc%3A%3Anew(Cons(10%2C%20Rc%3A%3Anew(Nil))))))%3B%0A%20%20%20%20println!(%22Count%20after%20creating%20a%20%3D%20%7B%7D%22%2C%20Rc%3A%3Astrong_count(%26a))%3B%20%2F%2F%20%3D%3E%201%0A%0A%20%20%20%20%2F%2F%20%60Rc%3A%3Aclone%60%20%E3%82%92%E4%BD%BF%E3%81%86%E3%80%82%60a.clone%28%29%60%20%E3%81%A8%E6%9B%B8%E3%81%84%E3%81%A6%E3%82%82%E5%90%8C%E3%81%98%E3%80%82%0A%20%20%20%20let%20b%20%3D%20Cons(3%2C%20Rc%3A%3Aclone(%26a))%3B%0A%20%20%20%20println!(%22Count%20after%20creating%20b%20%3D%20%7B%7D%22%2C%20Rc%3A%3Astrong_count(%26a))%3B%20%2F%2F%20%3D%3E%202%0A%0A%20%20%20%20%7B%0A%20%20%20%20%20%20%20%20let%20c%20%3D%20Cons(4%2C%20Rc%3A%3Aclone(%26a))%3B%0A%20%20%20%20%20%20%20%20println!(%22Count%20after%20creating%20c%20%3D%20%7B%7D%22%2C%20Rc%3A%3Astrong_count(%26a))%3B%20%2F%2F%20%3D%3E%203%0A%20%20%20%20%7D%20%2F%2F%20%60c%60%20%E3%81%8C%E3%82%B9%E3%82%B3%E3%83%BC%E3%83%97%E3%82%92%E6%8A%9C%E3%81%91%E3%82%8B%E3%81%A8%E3%82%AB%E3%82%A6%E3%83%B3%E3%83%88%E3%81%8C%E6%B8%9B%E3%82%8B%0A%0A%20%20%20%20println!(%22Count%20after%20c%20goes%20out%20of%20scope%20%3D%20%7B%7D%22%2C%20Rc%3A%3Astrong_count(%26a))%3B%20%2F%2F%20%3D%3E%202%0A%7D)
-`Rc<T>` を使うことで、`a` の所有権をムーブさせることなく、複数のリストで安全に共有することができました。
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=//%20src/main.rs%0A%0Astruct%20MySmartPointer%20%7B%0A%20%20%20%20data%3A%20String%2C%0A%7D%0A%0A//%20Drop%20%E3%83%88%E3%83%AC%E3%82%A4%E3%83%88%E3%82%92%E5%AE%9F%E8%A3%85%0Aimpl%20Drop%20for%20MySmartPointer%20%7B%0A%20%20%20%20fn%20drop%28%26mut%20self%29%20%7B%0A%20%20%20%20%20%20%20%20println%21%28%22Dropping%20MySmartPointer%20with%20data%20%60%7B%7D%60%21%22%2C%20self.data%29%3B%0A%20%20%20%20%7D%0A%7D%0A%0Afn%20main%28%29%20%7B%0A%20%20%20%20let%20a%20%3D%20MySmartPointer%20%7B%20data%3A%20%22hello%22.to_string%28%29%20%7D%3B%0A%20%20%20%20println%21%28%22MySmartPointer%20%27a%27%20created.%22%29%3B%0A%20%20%20%20%0A%20%20%20%20let%20b%20%3D%20MySmartPointer%20%7B%20data%3A%20%22world%22.to_string%28%29%20%7D%3B%0A%20%20%20%20println%21%28%22MySmartPointer%20%27b%27%20created.%22%29%3B%0A%0A%20%20%20%20println%21%28%22---%20End%20of%20main%20scope%20---%22%29%3B%0A%7D%20//%20a%20%E3%81%A8%20b%20%E3%81%AF%E3%81%93%E3%81%93%E3%81%A7%E3%82%B9%E3%82%B3%E3%83%BC%E3%83%97%E3%82%92%E6%8A%9C%E3%81%91%E3%82%8B)
 
-## 18.3 問題設定(2)：共有しているデータを変更したい！
+これを実行すると、`main` 関数が終了するタイミングで、変数が作られたのとは **逆の順番** で `drop` が呼ばれることがわかります。
 
-`Rc<T>` でデータの共有はできましたが、`Rc<T>` が保持する値は不変です。もし共有している値を後から変更したくなったらどうなるでしょうか？
-
-```rust
-use std::rc::Rc;
-let shared_value = Rc::new(5);
-let mut mut_ref = shared_value.as_mut(); // エラー！
-*mut_ref = 10;
+```text
+MySmartPointer 'a' created.
+MySmartPointer 'b' created.
+--- End of main scope ---
+Dropping MySmartPointer with data `world`!
+Dropping MySmartPointer with data `hello`!
 ```
-[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=use%20std%3A%3Arc%3A%3ARc%3B%0Alet%20shared_value%20%3D%20Rc%3A%3Anew(5)%3B%0Alet%20mut%20mut_ref%20%3D%20shared_value.as_mut()%3B%20%2F%2F%20%E3%82%A8%E3%83%A9%E3%83%BC%EF%BC%81%0A%2Amut_ref%20%3D%2010%3B)
-`Rc<T>` は複数の不変参照 (`&T`) を配ることはできますが、可変参照 (`&mut T`) を得ることはできません。もしできてしまうと、複数の場所から同時にデータを変更できてしまい、借用規則に違反するからです。
 
-ここで登場するのが **「内部可変性 (Interior Mutability)」** というデザインパターンと、それを実現する **`RefCell<T>`** です。
-
-## 18.4 解決策(2)：`RefCell<T>` で内部可変性を実現する
-
-`RefCell<T>` は、コンパイル時ではなく **実行時** に借用規則をチェックするスマートポインタです。これにより、不変に見える値の「内部」を可変にすることができます。
-
-- `borrow()`: 不変参照 `&T` に相当する `Ref<T>` を返す。
-- `borrow_mut()`: 可変参照 `&mut T` に相当する `RefMut<T>` を返す。
-
-`Rc<T>` と `RefCell<T>` を組み合わせた `Rc<RefCell<T>>` は、**複数の所有者を持ち、かつ内部の値を変更できる** オブジェクトを作るための非常に強力なパターンです。
-
-### 試してみよう：実行時パニックを体験する
-
-`RefCell<T>` は借用規則をコンパイル時に素通ししますが、実行時に監視しています。もしルールを破れば、プログラムは即座に **パニック** します。
-
-```rust
-use std::rc::Rc;
-use std::cell::RefCell;
-
-fn main() {
-    let shared_value = Rc::new(RefCell::new(5));
-
-    let a = Rc::clone(&shared_value);
-    let b = Rc::clone(&shared_value);
-
-    // 最初の可変借用は成功する
-    let mut b_mut = b.borrow_mut();
-    *b_mut += 10;
-    println!("b_mut: {}", b_mut);
-
-    // 同じスコープ内で、さらに可変借用しようとすると...
-    let mut a_mut = a.borrow_mut(); // 💥 パニック！
-    // thread 'main' panicked at 'already borrowed: BorrowMutError'
-
-    *a_mut += 5;
-    println!("a_mut: {}", a_mut);
-}
-```
-[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=use%20std%3A%3Arc%3A%3ARc%3B%0Ause%20std%3A%3Acell%3A%3ARefCell%3B%0A%0Afn%20main()%20%7B%0A%20%20%20%20let%20shared_value%20%3D%20Rc%3A%3Anew(RefCell%3A%3Anew(5))%3B%0A%0A%20%20%20%20let%20a%20%3D%20Rc%3A%3Aclone(%26shared_value)%3B%0A%20%20%20%20let%20b%20%3D%20Rc%3A%3Aclone(%26shared_value)%3B%0A%0A%20%20%20%20%2F%2F%20%E6%9C%80%E5%88%9D%E3%81%AE%E5%8F%AF%E5%A4%89%E5%80%9F%E7%94%A8%E3%81%AF%E6%88%90%E5%8A%9F%E3%81%99%E3%82%8B%0A%20%20%20%20let%20mut%20b_mut%20%3D%20b.borrow_mut()%3B%0A%20%20%20%20*b_mut%20%2B%3D%2010%3B%0A%20%20%20%20println!(%22b_mut%3A%20%7B%7D%22%2C%20b_mut)%3B%0A%0A%20%20%20%20%2F%2F%20%E5%90%8C%E3%81%98%E3%82%B9%E3%82%B3%E3%83%BC%E3%83%97%E5%86%85%E3%81%A7%E3%80%81%E3%81%95%E3%82%89%E3%81%AB%E5%8F%AF%E5%A4%89%E5%80%9F%E7%94%A8%E3%81%97%E3%82%88%E3%81%86%E3%81%A8...%0A%20%20%20%20let%20mut%20a_mut%20%3D%20a.borrow_mut()%3B%20%2F%2F%20%F0%9F%92%A5%20%E3%83%91%E3%83%8B%E3%83%83%E3%82%AF%EF%BC%81%0A%20%20%20%20%2F%2F%20thread%20%27main%27%20panicked%20at%20%27already%20borrowed%3A%20BorrowMutError%27%0A%0A%20%20%20%20*a_mut%20%2B%3D%205%3B%0A%20%20%20%20println!(%22a_mut%3A%20%7B%7D%22%2C%20a_mut)%3B%0A%7D)
-`b_mut` という可変借用が存在するスコープで、`a.borrow_mut()` を呼び出したため、実行時エラーが発生しました。これは、コンパイラが見逃した借用規則違反を、`RefCell` が実行時に捕まえてくれた結果です。
+このように、Rustは手動でメモリ解放コードを書かなくても、`Drop` トレイトを通じて安全かつ自動的にリソースをクリーンアップしてくれるのです。
 
 ## 18.5 まとめ
 
-- `Rc<T>` は、単一スレッドでデータへの複数の所有権（共有所有）を可能にする。参照カウントで寿命を管理する。
-- 内部可変性は、不変な参照の裏でデータを変更するためのデザインパターン。
-- `RefCell<T>` は、実行時に借用チェックを行うことで内部可変性を提供する。
-- `RefCell<T>` の借用規則を破ると、コンパイルエラーの代わりに **実行時パニック** が発生する。
-- `Rc<RefCell<T>>` は、複数の所有者がいて、かつ値を変更できるデータ構造を作るための一般的なイディオム。
+- スマートポインタは、単なるポインタ以上の機能を持つ `struct` である。
+- `Box<T>` は、データをヒープに配置するための最もシンプルなスマートポインタ。
+- `Box<T>` を使うことで、コンパイル時にサイズが確定しない再帰的なデータ構造を安全に作ることができる。
+- `Box<T>` は `Drop` トレイトを実装しており、スコープを抜ける際にヒープメモリを自動で解放する。
+- `Box<T>` は `Deref` トレイトを実装しており、`*` 演算子で中のデータにアクセスできる。
 
 ---
 
-次の部では、視点を変えて、プロジェクトが大きくなるにつれて重要になる「プロジェクト管理」と「テスト」について学びます。まずは、コードを整理するためのモジュールシステムから始めましょう。
+`Box<T>` は、単一の所有者を持つヒープ上のデータを扱うための基本ツールです。次の章では、複数の所有者を持つデータを扱うためのスマートポインタ、`Rc<T>` (参照カウント) と、不変な値の内部を変更可能にする `RefCell<T>` について学びます。

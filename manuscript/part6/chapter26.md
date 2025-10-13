@@ -1,183 +1,68 @@
-# 第 26 章：実践プロジェクト：Web API サーバーの開発
+# 第 26 章：実践：mini-grep の作成
 
 ## この章のゴール
-- `axum` フレームワークを使い、基本的なJSON APIサーバーをゼロから構築できる。
-- `Router` を使って、HTTPメソッドとパスをリクエスト処理関数（ハンドラ）に紐付けることができる。
-- `Json`, `Path`, `State` といった `axum` のエクストラクタを使い、リクエストから型安全にデータを抽出できる。
-- `serde` を使って、リクエストボディのJSONをRustの構造体にデシリアライズし、レスポンスとして構造体をJSONにシリアライズできる。
-- `Arc<Mutex<T>>` を使って、複数のリクエストにまたがるアプリケーションの状態を安全に共有・変更できる。
+- `std::env::args` を使って、コマンドライン引数を読み込むことができる。
+- 環境変数 `IGNORE_CASE=1` を読み取り、検索の挙動を制御できる。
+- `eprintln!` を使って、標準出力 (`stdout`) ではなく標準エラー出力 (`stderr`) にエラーメッセージを出力できる。
 
 ---
 
-## 26.1 なぜこれが必要か？ Rustによる高速・安全なWebサービス
+## 26.1 プロジェクトのセットアップと要件定義
 
-CLIツールと並び、Webアプリケーション（特にバックエンドAPI）は、Rustの主要なユースケースの一つです。Rustの安全性、パフォーマンス、そして優れた非同期エコシステムは、高負荷なリクエストを効率的にさばき、メモリ安全性のバグをコンパイル時に排除できるため、信頼性の高いWebサービスを構築するのに非常に適しています。
+`grep` は、ファイルから指定した文字列を検索する、UNIXの古典的で強力なツールです。この章では、その機能をシンプルにした `mini-grep` を作成します。
 
-この章では、`tokio`エコシステムの一部であるモダンなWebフレームワーク `axum` を使って、ユーザー情報を管理するシンプルなJSON APIサーバーを構築します。
-
-## 26.2 プロジェクトの準備と「Hello, World」
+1.  コマンドライン引数として「検索クエリ」と「ファイルパス」を受け取る。
+2.  指定されたファイルを開き、内容を読み込む。
+3.  ファイルの内容を一行ずつ走査し、クエリ文字列が含まれる行を標準出力に出力する。
+4.  環境変数 `IGNORE_CASE` がセットされていたら、大文字・小文字を区別せずに検索する。
 
 ```sh
-cargo new web-api-server
+cargo new mini-grep
 ```
-でプロジェクトを作成し、必要なクレートを `Cargo.toml` に追加します。
+でプロジェクトを作成しましょう。
 
-```toml
-# Cargo.toml
-[dependencies]
-axum = "0.7"
-tokio = { version = "1", features = ["full"] }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-```
+## 26.2 コマンドライン引数の受け取り
 
-### 試してみよう：最初のサーバーを起動する
+`std::env::args()` は、プログラムに渡されたコマンドライン引数のイテレータを返します。
 
-まずは、最もシンプルなサーバーを起動してみましょう。`src/main.rs` を以下のように編集します。
+この `Args` から引数をパースし、クエリとファイル名を保持する `Config` 構造体を作成します。エラー処理には `Result` を使います。
 
-```rust
-// src/main.rs
-use axum::{
-    routing::get,
-    Router,
-};
+## 26.3 ファイルの読み込み
 
-#[tokio::main]
-async fn main() {
-    // 1. ルーターを定義する
-    let app = Router::new().route("/", get(root));
+`std::fs::read_to_string` は、ファイルパスを受け取り、その内容を `String` として返す便利な関数です。この関数も失敗する可能性があるため、`Result` を返します。
 
-    // 2. サーバーを起動する
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await.unwrap();
-    println!("listening on {}", listener.local_addr().unwrap());
-    axum::serve(listener, app).await.unwrap();
-}
+`run` 関数は、`Config` を受け取り、ファイル読み込みなどの主要なロジックを実行します。
 
-// 3. ルートパス ("/") へのGETリクエストを処理するハンドラ
-async fn root() -> &'static str {
-    "Hello, World!"
-}
-```
-[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=//%20src/main.rs%0Ause%20axum%3A%3A%7B%0A%20%20%20%20routing%3A%3Aget%2C%0A%20%20%20%20Router%2C%0A%7D%3B%0A%0A%23%5Btokio%3A%3Amain%5D%0Aasync%20fn%20main%28%29%20%7B%0A%20%20%20%20//%201.%20%E3%83%AB%E3%83%BC%E3%82%BF%E3%83%BC%E3%82%92%E5%AE%9A%E7%BE%A9%E3%81%99%E3%82%8B%0A%20%20%20%20let%20app%20%3D%20Router%3A%3Anew%28%29.route%28%22/%22%2C%20get%28root%29%29%3B%0A%0A%20%20%20%20//%202.%20%E3%82%B5%E3%83%BC%E3%83%90%E3%83%BC%E3%82%92%E8%B5%B7%E5%8B%95%E3%81%99%E3%82%8B%0A%20%20%20%20let%20listener%20%3D%20tokio%3A%3Anet%3A%3ATcpListener%3A%3Abind%28%22127.0.0.1%3A3000%22%29.await.unwrap%28%29%3B%0A%20%20%20%20println%21%28%22listening%20on%20%7B%7D%22%2C%20listener.local_addr%28%29.unwrap%28%29%29%3B%0A%20%20%20%20axum%3A%3Aserve%28listener%2C%20app%29.await.unwrap%28%29%3B%0A%7D%0A%0A//%203.%20%E3%83%AB%E3%83%BC%E3%83%88%E3%83%91%E3%82%B9%20%28%22/%22%29%20%E3%81%B8%E3%81%AEGET%E3%83%AA%E3%82%AF%E3%82%A8%E3%82%B9%E3%83%88%E3%82%92%E5%87%A6%E7%90%86%E3%81%99%E3%82%8B%E3%83%8F%E3%83%B3%E3%83%89%E3%83%A9%0Aasync%20fn%20root%28%29%20-%3E%20%26%27static%20str%20%7B%0A%20%20%20%20%22Hello%2C%20World%21%22%0A%7D)
-`cargo run` で実行し、`curl http://127.0.0.1:3000` を別のターミナルで実行すると、"Hello, World!" が返ってきます。
+## 26.4 ロジックの実装とテスト駆動開発 (TDD)
 
-## 26.3 JSON APIの構築
+`mini-grep` の中核となる検索ロジックは、テストを先に書く **テスト駆動開発 (TDD: Test-Driven Development)** のアプローチで実装してみましょう。
 
-次に、ユーザーを作成・取得するAPIを実装していきます。
+1.  **テストを書く**: まず、失敗するテストを書きます。
+2.  **コンパイルを通す**: テストがコンパイルできるように、最小限のコード（空の関数など）を書きます。
+3.  **テストを成功させる**: テストが通るように、ロジックを実装します。
+4.  **リファクタリング**: コードをきれいにします。
 
-### 試してみよう：JSONの送受信と状態共有
+このサイクルを繰り返すことで、自信を持ってロジックを構築できます。
 
-まず、ユーザーを表す `User` 構造体と、ユーザー作成時のリクエストボディを表す `CreateUser` 構造体を定義します。`serde` の `Serialize`/`Deserialize` を `derive` することに注意してください。
+## 26.5 環境変数による挙動の変更
 
-次に、ユーザーデータを保存するための「データベース」として、インメモリの `HashMap` を使います。これを複数のリクエストで共有するために `Arc<Mutex<...>>` でラップし、`axum` の `State` エクストラクタでハンドラに渡します。
+`std::env::var` は、指定された環境変数の値を `Result<String, VarError>` として返します。この結果を調べて、大文字・小文字を区別しない検索を実装します。
 
-```rust
-// src/main.rs
-use axum::{
-    extract::{Path, State},
-    http::StatusCode,
-    response::Json,
-    routing::{get, post},
-    Router,
-};
-use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
-use std::sync::{Arc, Mutex};
+## 26.6 標準エラー出力への書き込み
 
-#[tokio::main]
-async fn main() {
-    // アプリケーションの状態：インメモリのシンプルなDB
-    let db = Arc::new(Mutex::new(HashMap::new()));
+`println!` は標準出力 (`stdout`) に出力しますが、エラーメッセージや進捗報告は標準エラー出力 (`stderr`) に書くのが一般的です。これにより、ユーザーは `mini-grep result.txt > output.txt` のように、正常な出力だけをファイルにリダイレクトできます。
 
-    let app = Router::new()
-        .route("/users", post(create_user))
-        .route("/users/:id", get(get_user))
-        // .with_state() でルーターに状態を渡す
-        .with_state(db);
+エラーメッセージには `eprintln!` を使いましょう。
 
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await.unwrap();
-    println!("listening on {}", listener.local_addr().unwrap());
-    axum::serve(listener, app).await.unwrap();
-}
+## 26.7 まとめ
 
-// 共有する状態の型エイリアス
-type Db = Arc<Mutex<HashMap<u64, User>>>;
-
-#[derive(Debug, Serialize, Clone)]
-struct User {
-    id: u64,
-    username: String,
-}
-
-#[derive(Debug, Deserialize)]
-struct CreateUser {
-    username: String,
-}
-
-// POST /users: ユーザーを作成するハンドラ
-async fn create_user(
-    // Stateエクストラクタで共有状態を受け取る
-    State(db): State<Db>,
-    // Jsonエクストラクタでリクエストボディをデシリアライズ
-    Json(payload): Json<CreateUser>,
-) -> (StatusCode, Json<User>) {
-    let mut db_lock = db.lock().unwrap();
-    let id = db_lock.keys().max().unwrap_or(&0) + 1;
-    let user = User {
-        id,
-        username: payload.username,
-    };
-    db_lock.insert(id, user.clone());
-
-    (StatusCode::CREATED, Json(user))
-}
-
-// GET /users/:id: ユーザーを取得するハンドラ
-async fn get_user(
-    State(db): State<Db>,
-    // Pathエクストラクタでパスパラメータを受け取る
-    Path(id): Path<u64>,
-) -> Result<Json<User>, StatusCode> {
-    let db_lock = db.lock().unwrap();
-    if let Some(user) = db_lock.get(&id) {
-        Ok(Json(user.clone()))
-    } else {
-        Err(StatusCode::NOT_FOUND)
-    }
-}
-```
-[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=//%20src/main.rs%0Ause%20axum%3A%3A%7B%0A%20%20%20%20extract%3A%3A%7BPath%2C%20State%7D%2C%0A%20%20%20%20http%3A%3AStatusCode%2C%0A%20%20%20%20response%3A%3AJson%2C%0A%20%20%20%20routing%3A%3A%7Bget%2C%20post%7D%2C%0A%20%20%20%20Router%2C%0A%7D%3B%0Ause%20serde%3A%3A%7BDeserialize%2C%20Serialize%7D%3B%0Ause%20std%3A%3Acollections%3A%3AHashMap%3B%0Ause%20std%3A%3Async%3A%3A%7BArc%2C%20Mutex%7D%3B%0A%0A%23%5Btokio%3A%3Amain%5D%0Aasync%20fn%20main%28%29%20%7B%0A%20%20%20%20//%20%E3%82%A2%E3%83%97%E3%83%AA%E3%82%B1%E3%83%BC%E3%82%B7%E3%83%A7%E3%83%B3%E3%81%AE%E7%8A%B6%E6%85%8B%EF%BC%9A%E3%82%A4%E3%83%B3%E3%83%A1%E3%83%A2%E3%83%AA%E3%81%AE%E3%82%B7%E3%83%B3%E3%83%97%E3%83%AB%E3%81%AADB%0A%20%20%20%20let%20db%20%3D%20Arc%3A%3Anew%28Mutex%3A%3Anew%28HashMap%3A%3Anew%28%29%29%29%3B%0A%0A%20%20%20%20let%20app%20%3D%20Router%3A%3Anew%28%29%0A%20%20%20%20%20%20%20%20.route%28%22/users%22%2C%20post%28create_user%29%29%0A%20%20%20%20%20%20%20%20.route%28%22/users/%3Aid%22%2C%20get%28get_user%29%29%0A%20%20%20%20%20%20%20%20//%20.with_state%28%29%20%E3%81%A7%E3%83%AB%E3%83%BC%E3%82%BF%E3%83%BC%E3%81%AB%E7%8A%B6%E6%85%8B%E3%82%92%E6%B8%A1%E3%81%99%0A%20%20%20%20%20%20%20%20.with_state%28db%29%3B%0A%0A%20%20%20%20let%20listener%20%3D%20tokio%3A%3Anet%3A%3ATcpListener%3A%3Abind%28%22127.0.0.1%3A3000%22%29.await.unwrap%28%29%3B%0A%20%20%20%20println%21%28%22listening%20on%20%7B%7D%22%2C%20listener.local_addr%28%29.unwrap%28%29%29%3B%0A%20%20%20%20axum%3A%3Aserve%28listener%2C%20app%29.await.unwrap%28%29%3B%0A%7D%0A%0A//%20%E5%85%B1%E6%9C%89%E3%81%99%E3%82%8B%E7%8A%B6%E6%85%8B%E3%81%AE%E5%9E%8B%E3%82%A8%E3%82%A4%E3%83%AA%E3%82%A2%E3%82%B9%0Atype%20Db%20%3D%20Arc%3CMutex%3CHashMap%3Cu64%2C%20User%3E%3E%3E%3B%0A%0A%23%5Bderive%28Debug%2C%20Serialize%2C%20Clone%29%5D%0Astruct%20User%20%7B%0A%20%20%20%20id%3A%20u64%2C%0A%20%20%20%20username%3A%20String%2C%0A%7D%0A%0A%23%5Bderive%28Debug%2C%20Deserialize%29%5D%0Astruct%20CreateUser%20%7B%0A%20%20%20%20username%3A%20String%2C%0A%7D%0A%0A//%20POST%20/users%3A%20%E3%83%A6%E3%83%BC%E3%82%B6%E3%83%BC%E3%82%92%E4%BD%9C%E6%88%90%E3%81%99%E3%82%8B%E3%83%8F%E3%83%B3%E3%83%89%E3%83%A9%0Aasync%20fn%20create_user%28%0A%20%20%20%20//%20State%E3%82%A8%E3%82%AF%E3%82%B9%E3%83%88%E3%83%A9%E3%82%AF%E3%82%BF%E3%81%A7%E5%85%B1%E6%9C%89%E7%8A%B6%E6%85%8B%E3%82%92%E5%8F%97%E3%81%91%E5%8F%96%E3%82%8B%0A%20%20%20%20State%28db%29%3A%20State%3CDb%3E%2C%0A%20%20%20%20//%20Json%E3%82%A8%E3%82%AF%E3%82%B9%E3%83%88%E3%83%A9%E3%82%AF%E3%82%BF%E3%81%A7%E3%83%AA%E3%82%AF%E3%82%A8%E3%82%B9%E3%83%88%E3%83%9C%E3%83%87%E3%82%A3%E3%82%92%E3%83%87%E3%82%B7%E3%83%AA%E3%82%A2%E3%83%A9%E3%82%A4%E3%82%BA%0A%20%20%20%20Json%28payload%29%3A%20Json%3CCreateUser%3E%2C%0A%29%20-%3E%20%28StatusCode%2C%20Json%3CUser%3E%29%20%7B%0A%20%20%20%20let%20mut%20db_lock%20%3D%20db.lock%28%29.unwrap%28%29%3B%0A%20%20%20%20let%20id%20%3D%20db_lock.keys%28%29.max%28%29.unwrap_or%28%260%29%20%2B%201%3B%0A%20%20%20%20let%20user%20%3D%20User%20%7B%0A%20%20%20%20%20%20%20%20id%2C%0A%20%20%20%20%20%20%20%20username%3A%20payload.username%2C%0A%20%20%20%20%7D%3B%0A%20%20%20%20db_lock.insert%28id%2C%20user.clone%28%29%29%3B%0A%0A%20%20%20%20%28StatusCode%3A%3ACREATED%2C%20Json%28user%29%29%0A%7D%0A%0A//%20GET%20/users/%3Aid%3A%20%E3%83%A6%E3%83%BC%E3%82%B6%E3%83%BC%E3%82%92%E5%8F%96%E5%BE%97%E3%81%99%E3%82%8B%E3%83%8F%E3%83%B3%E3%83%89%E3%83%A9%0Aasync%20fn%20get_user%28%0A%20%20%20%20State%28db%29%3A%20State%3CDb%3E%2C%0A%20%20%20%20//%20Path%E3%82%A8%E3%82%AF%E3%82%B9%E3%83%88%E3%83%A9%E3%82%AF%E3%82%BF%E3%81%A7%E3%83%91%E3%82%B9%E3%83%91%E3%83%A9%E3%83%A1%E3%83%BC%E3%82%BF%E3%82%92%E5%8F%97%E3%81%91%E5%8F%96%E3%82%8B%0A%20%20%20%20Path%28id%29%3A%20Path%3Cu64%3E%2C%0A%29%20-%3E%20Result%3CJson%3CUser%3E%2C%20StatusCode%3E%20%7B%0A%20%20%20%20let%20db_lock%20%3D%20db.lock%28%29.unwrap%28%29%3B%0A%20%20%20%20if%20let%20Some%28user%29%20%3D%20db_lock.get%28%26id%29%20%7B%0A%20%20%20%20%20%20%20%20Ok%28Json%28user.clone%28%29%29%29%0A%20%20%20%20%7D%20else%20%7B%0A%20%20%20%20%20%20%20%20Err%28StatusCode%3A%3ANOT_FOUND%29%0A%20%20%20%20%7D%0A%7D)
-
-### APIのテスト
-
-`cargo run` でサーバーを起動し、`curl` で動作を確認してみましょう。
-
-```bash
-# ユーザー "alice" を作成
-$ curl -X POST -H "Content-Type: application/json" -d '{"username": "alice"}' http://127.0.0.1:3000/users
-# {"id":1,"username":"alice"}
-
-# ユーザー "bob" を作成
-$ curl -X POST -H "Content-Type: application/json" -d '{"username": "bob"}' http://127.0.0.1:3000/users
-# {"id":2,"username":"bob"}
-
-# ID 1 のユーザーを取得
-$ curl http://127.0.0.1:3000/users/1
-# {"id":1,"username":"alice"}
-
-# 存在しないユーザーを取得
-$ curl -i http://127.0.0.1:3000/users/99
-# HTTP/1.1 404 Not Found
-# ...
-```
-
-## 26.4 まとめ
-
-- `axum` は、ハンドラ関数のシグネチャ（引数と戻り値の型）を見るだけで、リクエストからデータを抽出し、レスポンスを構築する、直感的で型安全なWebフレームワーク。
-- `Json<T>` エクストラクタと `serde` の組み合わせにより、JSONのシリアライズ・デシリアライズが簡単に行える。
-- `Path<T>` エクストラクタは、URLのパスから動的な値を型安全に抽出する。
-- `State<T>` エクストラクタと `Arc<Mutex<T>>` パターンは、複数のリクエストをまたいでアプリケーションの状態を安全に共有するための標準的な方法。
+- コマンドラインアプリケーションは、`std::env::args` で引数を受け取り、設定用の `struct` にパースするのが一般的なパターン。
+- `main` からロジックを分離し、`run` 関数にまとめることで、テストとエラー処理が容易になる。
+- `main` は `Result<(), Box<dyn Error>>` を返し、`if let Err(e)` でエラーを処理することで、関心事を分離できる。
+- テスト駆動開発 (TDD) は、先にテストを書くことで、自信を持ってロジックを実装し、リファクタリングするための強力な手法。
+- `std::env::var` で環境変数を読み取り、プログラムの挙動を柔軟に変更できる。
+- エラーメッセージは、`println!` ではなく `eprintln!` で標準エラー出力 (`stderr`) に書き出すべき。
 
 ---
 
-次の章では、Rustでのデータ処理とファイルI/Oについて、より詳しく掘り下げていきます。
+`mini-grep` の開発を通して、実践的なコマンドラインアプリケーションの構成要素を学びました。次の章では、Rust のイテレータとクロージャをさらに深く探求し、この `mini-grep` のコードをより効率的で表現力豊かな形にリファクタリングします。

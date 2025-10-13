@@ -1,136 +1,134 @@
-# 第 28 章：Python/Go コードからの移行戦略
+# 第 28 章：実践：CSVパーサーライブラリの作成
 
 ## この章のゴール
-- Rust を既存の Python/Go プロジェクトに組み込むFFI (Foreign Function Interface) の基本戦略を理解する。
-- `PyO3` を使い、PythonのCPUバウンドな処理をRustで高速化する具体的な方法を体験する。
-- GoからRustの関数をC ABI経由で呼び出す方法の概要を理解する。
-- マイクロサービスアーキテクチャにおいて、サービス単位でRustに置き換える「ストラングラー・フィグ・パターン」を理解する。
+- `csv` クレートを使い、CSVデータの読み込み（デシリアライズ）と書き込み（シリアライズ）ができる。
+- `anyhow` と `thiserror` クレートを組み合わせ、ライブラリのエラー報告とアプリケーションのエラー処理を分離する、実践的なエラーハンドリング戦略を実装できる。
+- `clap` を使ったCLIのフロントエンドと、`csv` を使ったコアロジックを分離し、テスト可能で再利用性の高いライブラリを設計できる。
 
 ---
 
-## 28.1 なぜこれが必要か？ 現実世界のソフトウェア開発
+## 28.1 なぜこれが必要か？ データ処理と堅牢なエラーハンドリング
 
-本書をここまで読み進めてきたあなたは、Rustのパフォーマンス、安全性、表現力に魅了されていることでしょう。しかし、現実の仕事の多くは、ゼロから新しいものを作る「グリーンフィールド」開発ではありません。多くの場合、PythonやGoで書かれ、長年ビジネスを支えてきた巨大な「レガシー」コードベースが存在します。
+CSV (Comma-Separated Values) は、表形式のデータを交換するための最も一般的なフォーマットの一つです。Rustのエコシステムには、`csv` クレートという非常に強力でパフォーマンスの良いCSVパーサーがあります。
 
-この章の目的は、「すべてをRustで書き直そう！」という夢を語ることではありません。既存のPython/Go資産を尊重しつつ、Rustの強みをどのように戦略的に統合し、システム全体をより良くしていくか、という現実的なアプローチを学ぶことです。
+この章では、`csv` クレートを使ってCSVをRustの構造体に変換するCLIツールを構築すると同時に、`anyhow` と `thiserror` という2つのクレートを使って、より実践的でメンテナンス性の高いエラーハンドリングの方法を探求します。
 
-## 28.2 戦略1：FFIによる機能拡張（ピンポイント高速化）
+## 28.2 プロジェクトの準備
 
-最も一般的で、リスクが低く、効果を実感しやすいのがこのアプローチです。アプリケーション全体の中で、パフォーマンスが特に問題となる、CPUバウンドな（計算量が非常に多い）関数を特定し、その関数だけをRustで書き直し、元の言語から呼び出す方法です。これをFFI (Foreign Function Interface) と呼びます。
+```sh
+cargo new csv-processor
+```
+でプロジェクトを作成し、`Cargo.toml` に必要なクレートを追加します。
 
-### 試してみよう：Pythonの処理を`PyO3`で高速化する
-
-Pythonは素晴らしい言語ですが、純粋なPythonコードは計算処理が遅いという弱点があります。これをRustで解決する体験をしてみましょう。
-
-**1. プロジェクトの準備**
-`PyO3`を使ったRustライブラリを簡単に開発できる `maturin` というツールを使います。
-
-```bash
-# Pythonの仮想環境を作成・有効化
-python -m venv .venv
-source .venv/bin/activate
-
-# maturin と PyO3 をインストール
-pip install maturin pyo3
+```toml
+# Cargo.toml
+[dependencies]
+csv = "1.1"
+serde = { version = "1.0", features = ["derive"] }
 ```
 
-次に、`maturin new -b pyo3 py-rust-ext` コマンドでプロジェクトの雛形を作成します。
+**今回のプロジェクトの仕様：**
+1.  世界の都市の人口データが書かれた `input.csv` を読み込む。
+2.  人口が1000万人以上の都市だけをフィルタリングする。
+3.  結果を `output.csv` に書き出す。
 
-**2. Rustでロジックを実装**
-`py-rust-ext/src/lib.rs` を編集し、計算量の多い処理（ここでは再帰的なフィボナッチ数計算）を実装します。
+まず、プロジェクトのルートに `input.csv` を作成しましょう。
+
+```csv
+# input.csv
+city,country,population
+Tokyo,Japan,37435191
+Delhi,India,29399141
+Shanghai,China,26317104
+Sao Paulo,Brazil,21846507
+Mumbai,India,20185064
+Kyoto,Japan,1475183
+```
+
+## 28.3 `csv` クレートによるデシリアライズとシリアライズ
+
+`csv` クレートの基本的な使い方は `serde` と非常によく似ています。
 
 ```rust
-// py-rust-ext/src/lib.rs
-use pyo3::prelude::*;
+// src/main.rs
+use serde::{Deserialize, Serialize};
+use std::error::Error;
 
-// Pythonから呼び出せるように #[pyfunction] をつける
-#[pyfunction]
-fn fib(n: u64) -> u64 {
-    if n <= 1 {
-        n
-    } else {
-        fib(n - 1) + fib(n - 2)
-    }
+// 1. CSVの行に対応する構造体を定義
+#[derive(Debug, Deserialize, Serialize)]
+struct Record {
+    city: String,
+    country: String,
+    // u64にパースできない行があった場合のためにOptionで受けることもできる
+    population: u64,
 }
 
-// モジュール定義
-#[pymodule]
-fn py_rust_ext(_py: Python, m: &PyModule) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(fib, m)?)?;
+fn main() -> Result<(), Box<dyn Error>> {
+    let input_path = "input.csv";
+    let output_path = "output.csv";
+    
+    // 2. CSV Readerを作成
+    // `from_path` は内部でファイルを開き、BufReaderでラップしてくれる
+    let mut rdr = csv::Reader::from_path(input_path)?;
+    
+    // 3. CSV Writerを作成
+    let mut wtr = csv::Writer::from_path(output_path)?;
+    
+    // ヘッダーを書き込む (オプション)
+    wtr.write_record(&["city", "country", "population"])?;
+
+    // 4. 一行ずつ処理する (ストリーミング)
+    for result in rdr.deserialize() {
+        let record: Record = result?;
+        
+        // 5. フィルタリング
+        if record.population > 10_000_000 {
+            // 6. レコードを書き込む
+            println!("Writing record: {:?}", record);
+            wtr.serialize(record)?;
+        }
+    }
+    
+    // Writerのバッファをフラッシュして、すべてのデータが書き込まれるのを保証
+    wtr.flush()?;
+
+    println!("\nProcessing complete! Check '{}'", output_path);
+
     Ok(())
 }
 ```
-[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=//%20py-rust-ext/src/lib.rs%0Ause%20pyo3%3A%3Aprelude%3A%3A%2A%3B%0A%0A//%20Python%E3%81%8B%E3%82%89%E5%91%BC%E3%81%B3%E5%87%BA%E3%81%9B%E3%82%8B%E3%82%88%E3%81%86%E3%81%AB%20%23%5Bpyfunction%5D%20%E3%82%92%E3%81%A4%E3%81%91%E3%82%8B%0A%23%5Bpyfunction%5D%0Afn%20fib%28n%3A%20u64%29%20-%3E%20u64%20%7B%0A%20%20%20%20if%20n%20%3C%3D%201%20%7B%0A%20%20%20%20%20%20%20%20n%0A%20%20%20%20%7D%20else%20%7B%0A%20%20%20%20%20%20%20%20fib%28n%20-%201%29%20%2B%20fib%28n%20-%202%29%0A%20%20%20%20%7D%0A%7D%0A%0A//%20%E3%83%A2%E3%82%B8%E3%83%A5%E3%83%BC%E3%83%AB%E5%AE%9A%E7%BE%A9%0A%23%5Bpymodule%5D%0Afn%20py_rust_ext%28_py%3A%20Python%2C%20m%3A%20%26PyModule%29%20-%3E%20PyResult%3C%28%29%3E%20%7B%0A%20%20%20%20m.add_function%28wrap_pyfunction%21%28fib%2C%20m%29%3F%29%3F%3B%0A%20%20%20%20Ok%28%28%29%29%0A%7D)
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=//%20src/main.rs%0Ause%20serde%3A%3A%7BDeserialize%2C%20Serialize%7D%3B%0Ause%20std%3A%3Aerror%3A%3AError%3B%0A%0A//%201.%20CSV%E3%81%AE%E8%A1%8C%E3%81%AB%E5%AF%BE%E5%BF%9C%E3%81%99%E3%82%8B%E6%A7%8B%E9%80%A0%E4%BD%93%E3%82%92%E5%AE%9A%E7%BE%A9%0A%23%5Bderive%28Debug%2C%20Deserialize%2C%20Serialize%29%5D%0Astruct%20Record%20%7B%0A%20%20%20%20city%3A%20String%2C%0A%20%20%20%20country%3A%20String%2C%0A%20%20%20%20//%20u64%E3%81%AB%E3%83%91%E3%83%BC%E3%82%B9%E3%81%A7%E3%81%8D%E3%81%AA%E3%81%84%E8%A1%8C%E3%81%8C%E3%81%82%E3%81%A3%E3%81%9F%E5%A0%B4%E5%90%88%E3%81%AE%E3%81%9F%E3%82%81%E3%81%ABOption%E3%81%A7%E5%8F%97%E3%81%91%E3%82%8B%E3%81%93%E3%81%A8%E3%82%82%E3%81%A7%E3%81%8D%E3%82%8B%0A%20%20%20%20population%3A%20u64%2C%0A%7D%0A%0Afn%20main%28%29%20-%3E%20Result%3C%28%29%2C%20Box%3Cdyn%20Error%3E%3E%20%7B%0A%20%20%20%20let%20input_path%20%3D%20%22input.csv%22%3B%0A%20%20%20%20let%20output_path%20%3D%20%22output.csv%22%3B%0A%20%20%20%20%0A%20%20%20%20//%202.%20CSV%20Reader%E3%82%92%E4%BD%9C%E6%88%90%0A%20%20%20%20//%20%60from_path%60%20%E3%81%AF%E5%86%85%E9%83%A8%E3%81%A7%E3%83%95%E3%82%A1%E3%82%A4%E3%83%AB%E3%82%92%E9%96%8B%E3%81%8D%E3%80%81BufReader%E3%81%A7%E3%83%A9%E3%83%83%E3%83%97%E3%81%97%E3%81%A6%E3%81%8F%E3%82%8C%E3%82%8B%0A%20%20%20%20let%20mut%20rdr%20%3D%20csv%3A%3AReader%3A%3Afrom_path%28input_path%29%3F%3B%0A%20%20%20%20%0A%20%20%20%20//%203.%20CSV%20Writer%E3%82%92%E4%BD%9C%E6%88%90%0A%20%20%20%20let%20mut%20wtr%20%3D%20csv%3A%3AWriter%3A%3Afrom_path%28output_path%29%3F%3B%0A%20%20%20%20%0A%20%20%20%20//%20%E3%83%98%E3%83%83%E3%83%80%E3%83%BC%E3%82%92%E6%9B%B8%E3%81%8D%E8%BE%BC%E3%82%80%20%28%E3%82%AA%E3%83%97%E3%82%B7%E3%83%A7%E3%83%B3%29%0A%20%20%20%20wtr.write_record%28%26%5B%22city%22%2C%20%22country%22%2C%20%22population%22%5D%29%3F%3B%0A%0A%20%20%20%20//%204.%20%E4%B8%80%E8%A1%8C%E3%81%9A%E3%81%A4%E5%87%A6%E7%90%86%E3%81%99%E3%82%8B%20%28%E3%82%B9%E3%83%88%E3%83%AA%E3%83%BC%E3%83%9F%E3%83%B3%E3%82%B0%29%0A%20%20%20%20for%20result%20in%20rdr.deserialize%28%29%20%7B%0A%20%20%20%20%20%20%20%20let%20record%3A%20Record%20%3D%20result%3F%3B%0A%20%20%20%20%20%20%20%20%0A%20%20%20%20%20%20%20%20//%205.%20%E3%83%95%E3%82%A3%E3%83%AB%E3%82%BF%E3%83%AA%E3%83%B3%E3%82%B0%0A%20%20%20%20%20%20%20%20if%20record.population%20%3E%2010_000_000%20%7B%0A%20%20%20%20%20%20%20%20%20%20%20%20//%206.%20%E3%83%AC%E3%82%B3%E3%83%BC%E3%83%89%E3%82%92%E6%9B%B8%E3%81%8D%E8%BE%BC%E3%82%80%0A%20%20%20%20%20%20%20%20%20%20%20%20println%21%28%22Writing%20record%3A%20%7B%3A%3F%7D%22%2C%20record%29%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20wtr.serialize%28record%29%3F%3B%0A%20%20%20%20%20%20%20%20%7D%0A%20%20%20%20%7D%0A%20%20%20%20%0A%20%20%20%20//%20Writer%E3%81%AE%E3%83%90%E3%83%83%E3%83%95%E3%82%A1%E3%82%92%E3%83%95%E3%83%A9%E3%83%83%E3%82%B7%E3%83%A5%E3%81%97%E3%81%A6%E3%80%81%E3%81%99%E3%81%B9%E3%81%A6%E3%81%AE%E3%83%87%E3%83%BC%E3%82%BF%E3%81%8C%E6%9B%B8%E3%81%8D%E8%BE%BC%E3%81%BE%E3%82%8C%E3%82%8B%E3%81%AE%E3%82%92%E4%BF%9D%E8%A8%BC%0A%20%20%20%20wtr.flush%28%29%3F%3B%0A%0A%20%20%20%20println%21%28%22%5CnProcessing%20complete%21%20Check%20%27%7B%7D%27%22%2C%20output_path%29%3B%0A%0A%20%20%20%20Ok%28%28%29%29%0A%7D)
 
-**3. ビルドとインストール**
-プロジェクトのルート（`py-rust-ext/`）で `maturin develop` を実行します。これにより、Rustコードがコンパイルされ、現在のPython環境にモジュールとしてインストールされます。
+`cargo run` で実行すると、コンソールに処理中のレコードが表示され、プロジェクトルートに `output.csv` が生成されます。中身を確認すると、人口が1000万人以上の都市だけが書き出されているはずです。
 
-**4. Pythonから呼び出して速度を比較**
-同じディレクトリに `main.py` を作成し、純粋なPython版とRust版の実行速度を比較します。
-
-```python
-# main.py
-import time
-# maturinでビルドしたRustモジュールをインポート
-from py_rust_ext import fib as fib_rust
-
-def fib_py(n):
-    if n <= 1:
-        return n
-    else:
-        return fib_py(n - 1) + fib_py(n - 2)
-
-# --- Python版 ---
-start = time.time()
-result_py = fib_py(35)
-end = time.time()
-print(f"Python version: result={result_py}, time={end - start:.4f}s")
-
-# --- Rust版 ---
-start = time.time()
-result_rust = fib_rust(35)
-end = time.time()
-print(f"Rust version:   result={result_rust}, time={end - start:.4f}s")
+```csv
+# output.csv
+city,country,population
+Tokyo,Japan,37435191
+Delhi,India,29399141
+Shanghai,China,26317104
+Sao Paulo,Brazil,21846507
+Mumbai,India,20185064
 ```
 
-`python main.py` で実行すると、Rust版が劇的に高速であることが確認できます。これがFFIの威力です。データ分析、画像処理、機械学習の前処理など、計算ボトルネックがある場所で絶大な効果を発揮します。
+## 28.4 `anyhow` と `thiserror` によるエラーハンドリング
 
-### Goとの連携
+第22章では、`Box<dyn Error>` を使ってエラーを処理しました。これは手軽ですが、エラーの種類に関する情報が失われてしまいます。
 
-GoとRustを連携させるには、C言語のABI（Application Binary Interface）を介するのが一般的です。
+- **`thiserror`**: ライブラリ側で使う。`#[derive(Error)]` を使って、カスタムエラー型を簡単に作成できる。ライブラリの利用者がエラーの種類に応じて `match` できるように、詳細で構造化されたエラーを定義するのに適している。
+- **`anyhow`**: アプリケーション側（`main.rs` など）で使う。様々な種類のエラーを `anyhow::Result` や `anyhow::Error` という単一の型にまとめ、`?` 演算子で簡単に伝播させることができる。コンテキストを追加する (`.context()`) のも容易。
 
-1.  Rust側でC互換の関数 (`extern "C" fn`) を持つ共有ライブラリ (`.so`, `.dylib`など) を作成します。
-2.  Go側で `cgo` を使い、その共有ライブラリをインポートして関数を呼び出します。
-
-これは `PyO3` を使うより手動の作業が多くなりますが、同様にGoのアプリケーションの特定の部分をRustで高速化することが可能です。
-
-## 28.3 戦略2：サービス単位での置き換え
-
-もう一つの強力な戦略は、マイクロサービスアーキテクチャにおけるサービス単位での置き換えです。
-
-例えば、多くのサービスが連携して動作しているシステムで、特定のサービス（例：アクセスが集中する認証サービス、大量のデータを処理するETLサービスなど）のパフォーマンスや信頼性が問題になっているとします。
-
-この場合、そのサービスだけをRustで再実装し、同じAPI仕様（REST, gRPCなど）を公開します。そして、ロードバランサーやAPIゲートウェイの設定を切り替えて、リクエストを古いサービスから新しいRustのサービスに向けるのです。
-
-このアプローチは「ストラングラー・フィグ・パターン（絞め殺しのイチジクの木パターン）」とも呼ばれ、既存のシステム全体を止めることなく、一部分ずつ安全にリプレースしていくことができます。
-
-## 28.4 どの戦略を選ぶべきか？
-
-- **FFIによる機能拡張**:
-  - **適している場合**: 特定の関数がCPUボトルネックになっている。Pythonのデータサイエンス系ライブラリの内部実装を高速化するようなケース。
-  - **利点**: 影響範囲が限定的で、導入が比較的容易。すぐに効果を実感できる。
-- **サービス単位での置き換え**:
-  - **適している場合**: 特定のサービス全体のパフォーマンス、メモリ使用量、信頼性が問題。ステートフルな処理や複雑なI/Oを扱う場合。
-  - **利点**: レガシーコードを安全に刷新できる。Rustの非同期や型システムの恩恵を最大限に受けられる。
+この2つを組み合わせることで、「ライブラリは詳細なエラーを返し、アプリケーションはそれを簡単に扱う」という、理想的な関心の分離が実現できます。
 
 ## 28.5 まとめ
 
-- 既存のPython/GoコードベースにRustを導入する場合、すべてを書き換える必要はない。
-- FFIは、CPUバウンドな処理をRustで高速化するための強力な武器であり、`PyO3`を使えばPythonとシームレスに連携できる。
-- マイクロサービスアーキテクチャでは、問題となっているサービスを丸ごとRustで再実装し、ネットワーク経由で連携させるのが有効な戦略。
-- 成功の鍵は、プロファイリングによるボトルネックの正確な特定と、小さく始めて徐々に範囲を広げていくアプローチ。
+- `csv` クレートは、`serde` と連携し、Rustの構造体とCSVデータを効率的に相互変換（シリアライズ・デシリアライズ）するためのデファクトスタンダード。
+- `csv::Reader` はCSVデータを構造体のイテレータに、`csv::Writer` は構造体をCSVデータに変換する。
+- **`thiserror`** は、**ライブラリ** 側で構造化されたカスタムエラー型を定義するためのクレート。`#[derive(Error)]` が定型コードを削減する。
+- **`anyhow`** は、**アプリケーション** 側で様々なエラー型を統一的に扱い、コンテキストを追加してエラー伝播を簡潔にするためのクレート。
+- `clap` でCLIを、`thiserror` を使ったコアロジックをライブラリとして `lib.rs` に分離し、`main.rs` では `anyhow` を使ってそれらを統合するのは、堅牢なアプリケーションを構築するための優れたパターン。
 
 ---
 
-次の第7部では、さらにRustの能力を深く引き出すための、より発展的なトピックを探求します。まずは、Rustのメタプログラミング機能の核である「マクロ」の基礎から始めましょう。
+これで、Rustを使った実践的なデータ処理と、高度なエラーハンドリングのパターンを学びました。次の部では、Rustの表現力をさらに高める「マクロ」と、パフォーマンスを極限まで追求するための「unsafe」な世界について探求します。
 
