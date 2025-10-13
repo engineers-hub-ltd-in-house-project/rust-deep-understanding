@@ -47,10 +47,10 @@ fn dangle() -> &String {
 
 ```rust
 fn main() {
-    let string1 = String::from("abcd");
+    let string1 = "abcd";
     let string2 = "xyz";
 
-    let result = longest(string1.as_str(), string2);
+    let result = longest(string1, string2);
     println!("The longest string is {}", result);
 }
 
@@ -63,7 +63,7 @@ fn longest(x: &str, y: &str) -> &str {
     }
 }
 ```
-[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20main%28%29%20%7B%0A%20%20%20%20let%20string1%20%3D%20String%3A%3Afrom%28%22abcd%22%29%3B%0A%20%20%20%20let%20string2%20%3D%20%22xyz%22%3B%0A%0A%20%20%20%20let%20result%20%3D%20longest%28string1.as_str%28%29%2C%20string2%29%3B%0A%20%20%20%20println%21%28%22The%20longest%20string%20is%20%7B%7D%22%2C%20result%29%3B%0A%7D%0A%0A//%20%E2%9D%8C%20%E3%81%93%E3%81%AE%E3%82%B3%E3%83%BC%E3%83%89%E3%81%AF%E3%82%B3%E3%83%B3%E3%83%91%E3%82%A4%E3%83%AB%E3%81%A7%E3%81%8D%E3%81%AA%E3%81%84%EF%BC%81%0Afn%20longest%28x%3A%20%26str%2C%20y%3A%20%26str%29%20-%3E%20%26str%20%7B%0A%20%20%20%20if%20x.len%28%29%20%3E%20y.len%28%29%20%7B%0A%20%20%20%20%20%20%20%20x%0A%20%20%20%20%7D%20else%20%7B%0A%20%20%20%20%20%20%20%20y%0A%20%20%20%20%7D%0A%7D)
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20main%28%29%20%7B%0A%20%20%20%20let%20string1%20%3D%20%22abcd%22%3B%0A%20%20%20%20let%20string2%20%3D%20%22xyz%22%3B%0A%0A%20%20%20%20let%20result%20%3D%20longest%28string1%2C%20string2%29%3B%0A%20%20%20%20println%21%28%22The%20longest%20string%20is%20%7B%7D%22%2C%20result%29%3B%0A%7D%0A%0A//%20%E2%9D%8C%20%E3%81%93%E3%81%AE%E3%82%B3%E3%83%BC%E3%83%89%E3%81%AF%E3%82%B3%E3%83%B3%E3%83%91%E3%82%A4%E3%83%AB%E3%81%A7%E3%81%8D%E3%81%AA%E3%81%84%EF%BC%81%0Afn%20longest%28x%3A%20%26str%2C%20y%3A%20%26str%29%20-%3E%20%26str%20%7B%0A%20%20%20%20if%20x.len%28%29%20%3E%20y.len%28%29%20%7B%0A%20%20%20%20%20%20%20%20x%0A%20%20%20%20%7D%20else%20%7B%0A%20%20%20%20%20%20%20%20y%0A%20%20%20%20%7D%0A%7D)
 
 これを `cargo run` すると、`dangle` 関数の時と同じ `missing lifetime specifier` エラーが出ます。エラーの詳細を読むと、非常に的確なヒントが書かれています。
 
