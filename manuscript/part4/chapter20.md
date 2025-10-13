@@ -1,20 +1,22 @@
-# 第 20 章：パッケージ、クレート、モジュール
+# 第 20 章：パッケージ、クレート、モジュールでコードを整理する
 
 ## この章のゴール
 - パッケージ、クレート、モジュールの違いと、それぞれの役割を説明できる。
-- `mod` キーワードを使って、単一ファイル内のコードを整理したり、別ファイルに分割したりできるようになる。
-- `pub` キーワードの必要性を、コンパイルエラー「function is private」を通して説明できる。
-- `use` キーワードを使って、他のモジュールへのパスを短縮し、コードの可読性を上げられる。
+- `main.rs` が肥大化する問題点を理解し、コードを分割する必要性を説明できる。
+- `mod` キーワードを使って、単一ファイル内のコードを論理的なグループに整理できる。
+- モジュールのアイテムがデフォルトでプライベートである理由を理解し、`pub` キーワードで意図的に公開できる。
+- `mod` 宣言を使って、モジュールを別のファイルに分割し、プロジェクトを整理できる。
+- `use` キーワードを使って、他のモジュールへのパスを短縮し、コードの可読性を向上できる。
 - `super` キーワードを使って、親モジュールからの相対パスでアイテムを参照できる。
-- `struct` や `enum` のフィールドを `pub` にして、外部からのアクセスを許可できる。
+- `struct` や `enum` のフィールドやバリアントの公開ルールを理解し、適切に設定できる。
 
 ---
 
 ## 20.1 全体像：パッケージ > クレート > モジュール
 
-Rust のコード構成の単位は、大きい順に「パッケージ」「クレート」「モジュール」となります。プロジェクトが大きくなるにつれて、これらの単位をうまく使い分けることがコードの整理とメンテナンス性の向上に繋がります。
+Rust のプロジェクトが大きくなるにつれて、コードを整理し、メンテナンスしやすく保つことが重要になります。そのために、Rust は 3 つの階層的な単位を提供しています。
 
--   **パッケージ (Package)**: `cargo new` で作られる、一つの機能（ライブラリや実行可能ファイル）を提供する単位です。`Cargo.toml` を一つ含み、一つ以上のクレート（ライブラリまたはバイナリ）を持ちます。
+-   **パッケージ (Package)**: `cargo new` で作られる、一つの機能（ライブラリや実行可能ファイル）を提供する単位です。`Cargo.toml` を一つ含み、一つ以上のクレートを持ちます。
 -   **クレート (Crate)**: コンパイルの単位です。`rustc` が一度にコンパイルするソースコードの集まりを指します。他のプログラムから利用される**ライブラリクレート**か、実行可能ファイルになる**バイナリクレート**のどちらかになります。
 -   **モジュール (Module)**: クレート内のコードを整理し、名前空間を分割するための単位です。`mod` キーワードで定義し、アイテムの公開・非公開（プライバシー）を制御する境界にもなります。
 
@@ -22,59 +24,102 @@ Rust のコード構成の単位は、大きい順に「パッケージ」「ク
 
 ```mermaid
 graph TD;
-    A[パッケージ my_project] --> B{ライブラリクレート};
-    A --> C{バイナリクレート};
-    subgraph クレート
-        B --> D[モジュール front_of_house];
-        C --> E[モジュール main];
+    A["パッケージ (例: my_project)"] --> B{"クレート (ライブラリ or バイナリ)"};
+    subgraph B
+        C["モジュール (例: front_of_house)"];
+        D["モジュール (例: back_of_house)"];
     end
-    D --> F[関数 hosting];
-    D --> G[関数 serving];
-    E --> H[関数 main];
+    C --> E["関数, struct など"];
+    D --> F["関数, struct など"];
 
     style A fill:#f9f,stroke:#333,stroke-width:2px
     style B fill:#ccf,stroke:#333,stroke-width:2px
-    style C fill:#ccf,stroke:#333,stroke-width:2px
+    style C fill:#9f9,stroke:#333,stroke-width:2px
     style D fill:#9f9,stroke:#333,stroke-width:2px
-    style E fill:#9f9,stroke:#333,stroke-width:2px
 ```
 
-この図のように、一つのパッケージ（`my_project`）がライブラリとバイナリという二つのクレートを持つことができます。そして、各クレートはさらに複数のモジュールに分割され、具体的な関数などが実装されます。
+この章では、特にクレート内のコードを整理するための「モジュール」システムに焦点を当てて、その使い方を段階的に学んでいきます。
 
-## 20.2 パッケージとクレートの関係
+## 20.2 なぜコードを分割する必要があるのか？ (動機)
 
-`cargo new my_project` で作成されるのは **パッケージ** です。このとき、`src/main.rs` が自動的に作られますが、これは `my_project` という名前の **バイナリクレート** のルートになります。
+プロジェクトの初期段階では、すべてのロジックを `src/main.rs` に書くのが最も簡単です。しかし、機能が増えるにつれてファイルは長くなり、どこに何が書かれているのかを把握するのが難しくなっていきます。
 
-一つのパッケージは、
--   最大 1 つのライブラリクレート
--   任意の数のバイナリクレート
+例えば、レストランを管理するプログラムを考えてみましょう。
 
-を含むことができます。
+```rust
+// src/main.rs (機能追加前)
+fn main() {
+    println!("Hello, restaurant!");
+}
+```
 
-もし `src/lib.rs` というファイルを作成すると、Cargo はそれをパッケージの **ライブラリクレート** のルートとして扱います。クレート名はパッケージ名と同じ `my_project` になります。
+ここに、ホールの機能（注文受付、席案内）と、厨房の機能（調理、在庫管理）を追加していくと、`src/main.rs` はあっという間に数百行、数千行になってしまうでしょう。
 
-バイナリクレートは他のクレートから依存されることを意図していませんが、ライブラリクレートはまさにそのために存在します。
+このような状況は、以下の問題を引き起こします。
+-   **可読性の低下**: 関連するコードが散らばり、全体の流れを追うのが困難になる。
+-   **メンテナンス性の悪化**: 一つの機能を修正するつもりが、無関係な別の機能に影響を与えてしまう（意図しない結合）。
+-   **再利用性の欠如**: 特定の機能だけを別のプロジェクトで再利用することが難しい。
 
-## 20.3 利用ケース1：単一ファイルでのモジュール化
+この問題を解決するのが、**モジュール** です。モジュールを使うことで、関連するコードを一つのグループにまとめ、論理的な単位でコードを整理できます。
 
-プロジェクトの初期段階や、規模が小さい場合は、すべてのコードを `src/main.rs` に書くことが多いでしょう。しかし、関連する機能が増えてくると、`mod` ブロックを使ってファイルを分割せずにコードを論理的にグループ化できます。
+## 20.3 `mod`: コードをグループ化する最初のステップ
 
-レストランの厨房を例に考えてみましょう。注文を受け付ける `front_of_house`（ホール）と、調理をする `back_of_house`（厨房）という 2 つのモジュールを作成します。
+まずは、ファイルを増やさずに `src/main.rs` の中でコードをグループ化する方法から学びましょう。`mod` キーワードを使い、波括弧 `{}` でブロックを作ることで、その中に新しい名前空間（モジュール）を定義できます。
 
 ```rust
 // src/main.rs
 
-// "front_of_house" という名前のモジュールを定義
 mod front_of_house {
-    // front_of_house モジュールに属する "hosting" モジュールを定義
+    mod hosting {
+        fn add_to_waitlist() {}
+    }
+
+    mod serving {
+        fn take_order() {}
+    }
+}
+
+mod back_of_house {
+    fn fix_incorrect_order() {
+        cook_order();
+    }
+
+    fn cook_order() {}
+}
+
+fn eat_at_restaurant() {
+    // まだモジュール内の関数を呼び出すことはできない
+}
+
+fn main() {
+    eat_at_restaurant();
+}
+```
+
+このコードでは、`front_of_house` と `back_of_house` という 2 つのモジュールを作成しました。さらに `front_of_house` の中には `hosting` と `serving` という入れ子のモジュールがあります。
+
+これで、レストランに関連するコードが論理的にグループ化されました。しかし、このままではまだ `eat_at_restaurant` 関数から `add_to_waitlist` などの関数を呼び出すことはできません。なぜなら、モジュールは外部との間に明確な「壁」を作るからです。
+
+## 20.4 `pub`: モジュールの壁を越える
+
+Rust では、モジュール内のすべてのアイテム (関数、struct、enum など) は、デフォルトで **プライベート (private)** です。これは「カプセル化」という重要な原則のためです。モジュールの内部実装は隠蔽し、外部に公開したい機能だけを明示的に選択することで、安全でメンテナンスしやすいコードを書くことができます。
+
+アイテムを公開するには `pub` キーワードを使います。
+
+```rust
+// src/main.rs
+
+mod front_of_house {
+    // hosting モジュールを公開する
     pub mod hosting {
+        // add_to_waitlist 関数を公開する
         pub fn add_to_waitlist() {}
     }
 }
 
-// "eat_at_restaurant" 関数から "add_to_waitlist" を呼び出す
-pub fn eat_at_restaurant() {
-    // 絶対パスで指定
+fn eat_at_restaurant() {
+    // 絶対パスでモジュール内の関数を呼び出す
+    // `crate` はパッケージのルートを指す
     crate::front_of_house::hosting::add_to_waitlist();
 }
 
@@ -82,15 +127,13 @@ fn main() {
     eat_at_restaurant();
 }
 ```
-<a href="https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=627d35160875c7b370a2dd462b5826f0" target="_blank">Rust Playground で試す</a>
+[Rust Playground で試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=fc37397b9148b59828d1dd034d618991)
 
-この例では、`front_of_house` と `hosting` という入れ子のモジュールを作成しました。`eat_at_restaurant` 関数から `add_to_waitlist` を呼び出すには、`crate::front_of_house::hosting::add_to_waitlist()` という **絶対パス** を使用しています。`crate` はクレートのルートを指すキーワードです。
+`hosting` モジュールと `add_to_waitlist` 関数の両方に `pub` を付けたことで、`eat_at_restaurant` 関数から呼び出せるようになりました。`crate::` から始まるパスは **絶対パス** と呼ばれ、クレートのルートから階層を辿ります。
 
-### `pub` キーワードによる公開制御
+#### 試してみよう：コンパイルエラーの体験
 
-ここで重要なのが `pub` キーワードです。Rust では、モジュール内のアイテム（関数、struct など）はデフォルトで **プライベート** になっています。つまり、そのモジュールの外からはアクセスできません。
-
-もし `hosting` モジュールから `pub` を外すと、コンパイルエラーが発生します。
+もし `hosting` モジュールの `pub` を外して `mod hosting` にすると、どうなるでしょうか？コンパイラは以下のようなエラーを出します。
 
 ```text
 error[E0603]: module `hosting` is private
@@ -100,16 +143,16 @@ error[E0603]: module `hosting` is private
   |     ----------- visibility of this module is private
 ...
 13|     crate::front_of_house::hosting::add_to_waitlist();
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ module `hosting` is private
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ module `hosting` is private
 ```
 
-これは、カプセル化（実装の詳細を隠蔽すること）という原則を強制するための仕組みです。モジュールの作者は、外部に公開する API を `pub` を使って明示的に選択する必要があります。
+このエラーは、「`hosting` モジュールはプライベートなので、親モジュールである `front_of_house` の外からはアクセスできません」ということを教えてくれています。このように、`pub` はモジュールの公開 API を定義するための重要なキーワードです。
 
-## 20.4 利用ケース2：モジュールを別ファイルに分割する
+## 20.5 ファイル分割: `mod` 宣言
 
-プロジェクトが成長し、`src/main.rs` が長くなってきたら、モジュールを別のファイルに分割しましょう。先ほどのレストランの例を、ファイル分割でリファクタリングします。
+`src/main.rs` が十分に整理されてきましたが、モジュールの内容が大きくなると、やはりファイルを分割したくなります。Rust では、簡単な宣言でモジュールを別ファイルに切り出すことができます。
 
-まず、プロジェクトのファイル構成はこのようになります。
+プロジェクトのファイル構成を以下のように変更します。
 
 ```
 .
@@ -119,16 +162,15 @@ error[E0603]: module `hosting` is private
     └── front_of_house.rs
 ```
 
-`src/main.rs` では、`mod front_of_house;` と宣言します。これにより、Rust コンパイラは `src/front_of_house.rs` というファイルを読み込み、その内容を `front_of_house` モジュールとして解釈します。
+`src/main.rs` の `mod front_of_house { ... }` ブロックを、`mod front_of_house;` という宣言に置き換えます。セミコロンで終わることに注意してください。
 
 ```rust
 // src/main.rs
 
-// `src/front_of_house.rs` ファイルを `front_of_house` モジュールとして宣言する
+// Rustコンパイラに `src/front_of_house.rs` を探して読み込むよう指示する
 mod front_of_house;
 
-pub fn eat_at_restaurant() {
-    // パスは以前と同じ
+fn eat_at_restaurant() {
     crate::front_of_house::hosting::add_to_waitlist();
 }
 
@@ -137,54 +179,32 @@ fn main() {
 }
 ```
 
-そして、`front_of_house` モジュールの内容はすべて `src/front_of_house.rs` に移動します。
+そして、`mod front_of_house` ブロックの中身全体を、新しいファイル `src/front_of_house.rs` に移動します。
 
 ```rust
 // src/front_of_house.rs
 
+// このファイルの中身は以前の mod ブロックの中身と同じ
 pub mod hosting {
     pub fn add_to_waitlist() {}
 }
 ```
 
-ファイルシステムとモジュールツリーがどのように対応しているか、図で確認しましょう。
+これで、`src/main.rs` はすっきりと保たれたまま、プロジェクトの構造は論理的かつ物理的に整理されました。呼び出し側のコード (`eat_at_restaurant` 関数) は一切変更する必要がない点にも注目してください。これは、モジュールの内部実装がうまく隠蔽されている良い証拠です。
 
-```mermaid
-graph TD;
-    subgraph "ファイルシステム"
-        A["src/main.rs"] --> B["mod front_of_house;"];
-        C["src/front_of_house.rs"] --> D["pub mod hosting { ... }"];
-    end
+## 20.6 `use`: 長いパスを短縮する
 
-    subgraph "モジュールツリー"
-        E["crate (ルート)"] --> F["front_of_house"];
-        F --> G["hosting"];
-    end
-
-    B -.-> F;
-    D -.-> G;
-
-    style A fill:#f9f
-    style C fill:#f9f
-    style E fill:#ccf
-```
-
-このように、`mod` キーワードは、ファイルシステム上の構成を Rust のモジュールツリーにマッピングする役割を果たします。
-
-<a href="https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=66a3d90595304193557e937d5ab86638" target="_blank">Rust Playground で試す（複数ファイルを1ファイルで表現）</a>
-
-## 20.5 `use` キーワードでパスを短縮する
-
-毎回 `crate::front_of_house::hosting::add_to_waitlist()` のようにフルパスを書くのは大変です。`use` キーワードを使うと、他のモジュールへのパスを現在のスコープに持ち込むことができ、コードが簡潔になります。
+`crate::front_of_house::hosting::add_to_waitlist()` のようなフルパスは、関数がどこで定義されているか明確で良い面もありますが、何度も書くのは冗長です。`use` キーワードを使うと、パスを現在のスコープに持ち込んで短縮できます。
 
 ```rust
 // src/main.rs
+
 mod front_of_house;
 
-// `hosting` モジュールをこのスコープに持ち込む
+// `hosting` モジュールへのパスをスコープに持ち込む
 use crate::front_of_house::hosting;
 
-pub fn eat_at_restaurant() {
+fn eat_at_restaurant() {
     // 短縮されたパスで呼び出せる
     hosting::add_to_waitlist();
     hosting::add_to_waitlist();
@@ -194,11 +214,11 @@ fn main() {
     eat_at_restaurant();
 }
 ```
-<a href="https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=e18820c74b1e36093405b5f6a9645229" target="_blank">Rust Playground で試す</a>
+[Rust Playground で試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=655047b1c312781b4f4c7d03a55b2d28)
 
-慣例として、関数をスコープに持ち込む場合はその親モジュールまでを `use` で指定し（`use crate::front_of_house::hosting;`）、呼び出し時に `hosting::add_to_waitlist()` のようにモジュール名が残るようにします。これにより、その関数がどこで定義されたものなのかが分かりやすくなります。
+慣例として、関数を `use` する場合は、その親モジュールまでをスコープに持ち込むのが一般的です (`hosting::add_to_waitlist()` のように呼び出す)。これにより、関数がローカルで定義されたものではないことが一目でわかります。
 
-一方、`struct` や `enum` の場合は、フルパスで `use` するのが一般的です。
+一方、`struct` や `enum`、その他のアイテムを `use` する場合は、フルパスで指定するのが慣例です。
 
 ```rust
 use std::collections::HashMap;
@@ -209,14 +229,14 @@ fn main() {
 }
 ```
 
-## 20.6 `super` で親モジュールを参照する
+## 20.7 `super`: 親モジュールへの道
 
-モジュール階層が深くなると、兄弟モジュールや親モジュールのアイテムにアクセスしたくなることがあります。`super` キーワードは、現在のモジュールから見て一つ親のモジュールを指す相対パスです。ファイルシステムの `..` に似ています。
+時には、親モジュールや兄弟モジュールにあるアイテムにアクセスしたい場合があります。`super` キーワードは、ファイルシステムにおける `..` のように、現在のモジュールから見て一つ親のモジュールを指す相対パスを提供します。
 
-例えば、厨房（`back_of_house`）のコックが、お客さんの注文（`front_of_house` の管轄）を確認するケースを考えてみましょう。
+例えば、厨房 (`back_of_house`) のコックが、注文を修正するためにホール (`front_of_house`) の機能を使うケースを考えてみましょう。
 
 ```rust
-// in src/lib.rs
+// in src/lib.rs (main.rsでも同様)
 
 mod front_of_house {
     pub mod hosting {
@@ -227,27 +247,24 @@ mod front_of_house {
 mod back_of_house {
     fn fix_incorrect_order() {
         cook_order();
-        // `super` を使って親モジュール `crate` に戻り、
-        // そこから `front_of_house` にアクセスする
+        // `super` で親モジュール (crate) に戻り、
+        // 兄弟モジュールである `front_of_house` にアクセスする
         super::front_of_house::hosting::add_to_waitlist();
     }
 
     fn cook_order() {}
 }
-
-fn main() {}
 ```
-<a href="https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=583321527fc6ef416c141d8e1363e803" target="_blank">Rust Playground で試す</a>
+[Rust Playground で試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=45d139618b7c3d1000632a85e4ac3e45)
 
-`fix_incorrect_order` 関数は `back_of_house` モジュール内にあります。ここから `front_of_house` モジュール内の関数を呼ぶために、`super::` で一段階上がり、そこから `front_of_house` を辿っています。これにより、モジュール構造が変更された場合でも、修正箇所を減らすことができます。
+`fix_incorrect_order` 関数の中から `super::` を使うことで、`back_of_house` の親 (この場合は `crate` ルート) に移動し、そこから `front_of_house` モジュールを辿ることができます。これにより、モジュール構造の変更に強いコードを書くことができます。
 
-## 20.7 利用ケース3：Struct と Enum のフィールド公開
+## 20.8 `struct` と `enum` のプライバシー
 
-`struct` や `enum` も `pub` にすることで外部から利用可能になりますが、その中身の扱いには少し違いがあります。
+`struct` や `enum` を `pub` にしても、その中身のプライバシーの扱いは少し異なります。
 
-### Struct のフィールド公開
-
-`struct` を `pub` にしても、そのフィールドはデフォルトでプライベートのままです。フィールドにアクセスさせたい場合は、フィールドごとにも `pub` を付ける必要があります。
+-   **`struct`**: `struct` を `pub` にしても、そのフィールドはデフォルトでプライベートのままです。フィールドに外部からアクセスさせたい場合は、フィールドごとにも `pub` を付ける必要があります。
+-   **`enum`**: `enum` を `pub` にすると、そのすべてのバリアントも自動的に公開されます。
 
 ```rust
 mod back_of_house {
@@ -268,33 +285,8 @@ mod back_of_house {
             }
         }
     }
-}
 
-pub fn eat_at_restaurant() {
-    let mut meal = back_of_house::Breakfast::summer("Rye");
-    // OK: toast フィールドは公開されているので変更可能
-    meal.toast = String::from("Wheat");
-    println!("I'd like {} toast please", meal.toast);
-
-    // Error: seasonal_fruit はプライベートなのでアクセスできない
-    // meal.seasonal_fruit = String::from("blueberries");
-}
-
-fn main() {
-    eat_at_restaurant();
-}
-```
-<a href="https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=f3d35dd4a22c53b22b07e54f732431d1" target="_blank">Rust Playground で試す</a>
-
-このルールにより、構造体の内部表現を変更しても、その構造体を利用している外部のコードに影響を与えないようにすることができます。`seasonal_fruit` のようなフィールドは、`Breakfast::summer` のような関連関数を通してのみ設定できるように強制できるのです。
-
-### Enum のバリアント公開
-
-`enum` を `pub` にすると、そのすべてのバリアント（列挙子）も自動的に公開されます。
-
-```rust
-mod back_of_house {
-    // enum が pub なので、Appetizer::Soup も Appetizer::Salad も公開される
+    // enum が pub なので、バリアントもすべて公開される
     pub enum Appetizer {
         Soup,
         Salad,
@@ -302,81 +294,97 @@ mod back_of_house {
 }
 
 pub fn eat_at_restaurant() {
+    // Breakfast の toast フィールドにはアクセスできる
+    let mut meal = back_of_house::Breakfast::summer("Rye");
+    meal.toast = String::from("Wheat");
+
+    // Appetizer のバリアントにはアクセスできる
     let order1 = back_of_house::Appetizer::Soup;
-    let order2 = back_of_house::Appetizer::Salad;
+}
+```
+[Rust Playground で試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=b0762391b15655ac5f9922e37466c5d0)
+
+この `struct` のルールにより、構造体の内部実装（例えば `seasonal_fruit` の管理方法）を外部から隠蔽し、`summer` のようなコンストラクタ関数を通してのみインスタンスが作られるように強制できます。これはカプセル化の強力な例です。
+
+## 20.9 Python/Go ではどうやっていたか？ (比較)
+
+他の言語の経験者にとって、Rust のモジュールシステムは少し独特かもしれません。Python や Go の仕組みと比較してみましょう。
+
+| 機能 | Rust | Python | Go |
+| :--- | :--- | :--- | :--- |
+| **コード分割の単位** | モジュール (`mod`) | ファイル (`.py`) | ディレクトリ (パッケージ) |
+| **公開/非公開** | `pub` で明示的に公開 | `_` プレフィックス (慣習) | 先頭が大文字なら公開 |
+| **名前空間の読み込み** | `use` 宣言 | `import` / `from ... import` | `import` |
+| **パッケージ管理** | Cargo (`Cargo.toml`) | pip (`requirements.txt`) | Go Modules (`go.mod`) |
+
+### Python との違い
+
+Python では、すべての `.py` ファイルが自動的にモジュールになります。ディレクトリに `__init__.py` を置くことでパッケージとして扱われます。公開・非公開に厳密なルールはなく、アンダースコア `_` で始まる名前はプライベートなものとして扱う、という紳士協定 (慣習) に従います。
+
+Rust はより厳格です。ファイルは自動的にはモジュールにならず、`mod` キーワードでクレートに含めることを明示的に宣言する必要があります。また、`pub` がなければアイテムは完全にプライベートであり、コンパイラがアクセスを強制的に防ぎます。
+
+### Go との違い
+
+Go では、同じディレクトリにあるすべての `.go` ファイルは、単一のパッケージに属します。公開 (Export) するかどうかは、関数や型の名前の先頭が大文字か小文字かで決まります。このルールは非常にシンプルです。
+
+Rust のモジュールシステムは、Go よりも階層構造を細かく作れるという柔軟性があります。1 つのファイル内に複数の `mod` ブロックをネストさせたり、ディレクトリ構造とモジュール構造を対応させたりすることができます。公開範囲も `pub` を使ってより細かく制御できます。
+
+## 20.10 練習問題
+
+### 問題 1: `mod` ブロックでリファクタリング
+
+以下のコードは、1 つの `main.rs` に複数の関数がまとまっています。これを `front_of_house` と `back_of_house` という 2 つのモジュールに分け、`eat_at_restaurant` 関数から正しく呼び出せるようにリファクタリングしてください。ただし、この問題では**ファイルを分割せず**、`main.rs` 内で `mod` ブロックを使用してください。
+
+**開始コード:**
+```rust
+// main.rs
+fn add_to_waitlist() {}
+fn take_order() {}
+fn cook_order() {}
+fn fix_incorrect_order() {
+    cook_order();
+    // ホールのスタッフを呼ぶ (この部分は後で実装)
+}
+
+fn eat_at_restaurant() {
+    // ここに呼び出しコードを書く
+    add_to_waitlist();
+    take_order();
+    fix_incorrect_order();
 }
 
 fn main() {
     eat_at_restaurant();
 }
 ```
-<a href="https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&gist=346513364f77c3a078e47d10e0600ddb" target="_blank">Rust Playground で試す</a>
 
-enum のバリアントを一部だけ非公開にする、という使い方はあまり一般的ではないため、このようなシンプルなルールになっています。
+**要件:**
+- `add_to_waitlist` と `take_order` は `front_of_house` モジュールに含めること。
+- `cook_order` と `fix_incorrect_order` は `back_of_house` モジュールに含めること。
+- `eat_at_restaurant` から呼び出せるように、必要なアイテムに `pub` を付けること。
+- `fix_incorrect_order` から `cook_order` を呼び出せるようにすること。
 
-## 20.8 利用ケース4：ライブラリとバイナリの連携
+### 問題 2: ファイル分割
 
-最後に、より実践的なパッケージ構成を見てみましょう。ある程度の規模のアプリケーションでは、中心的なロジックをライブラリクレート（`src/lib.rs`）に実装し、コマンドラインツールや GUI アプリなどの具体的なエントリーポイントをバイナリクレート（`src/main.rs`）に実装する、という分離がよく行われます。
+問題 1 で作成したコードを、さらにファイル分割して整理しましょう。
 
-ファイル構成：
-```
-.
-├── Cargo.toml
-└── src
-    ├── main.rs   (バイナリクレート)
-    └── lib.rs    (ライブラリクレート)
-```
+**要件:**
+- `front_of_house` モジュールの中身を `src/front_of_house.rs` ファイルに移動すること。
+- `back_of_house` モジュールの中身を `src/back_of_house.rs` ファイルに移動すること。
+- `main.rs` を修正し、`mod` 宣言を使ってこれらのファイルを読み込むようにすること。
+- `eat_at_restaurant` 関数の先頭で `use` を使い、関数呼び出しを簡潔にすること (例: `front_of_house::add_to_waitlist()`)。
 
-`src/lib.rs` に、外部に公開したい関数を `pub` 付きで定義します。
+---
 
-```rust
-// src/lib.rs
+## 20.11 まとめ
 
-//! `art` クレートは、美術品をモデリングするためのライブラリです。
-
-pub mod kinds {
-    /// CMYK カラーモデル
-    pub enum PrimaryColor {
-        Red,
-        Yellow,
-        Blue,
-    }
-}
-```
-
-`src/main.rs` からは、パッケージ名（クレート名）を使ってライブラリクレートの機能を利用できます。
-
-```rust
-// src/main.rs
-
-// パッケージ `my_project` (ライブラリクレート) の `kinds` モジュールを use で持ち込む
-use my_project::kinds::PrimaryColor;
-
-fn main() {
-    let red = PrimaryColor::Red;
-}
-```
-（この例は2つのクレートにまたがるため、Rust Playground では直接実行できません）
-
-このようにロジックをライブラリクレートに分離することで、
--   ロジックの再利用性が高まる（他のバイナリからも利用できる）
--   `cargo test` を実行したときに、ライブラリ部分のテストが独立して実行される
--   関心事が分離され、コードの見通しが良くなる
-
-といった多くのメリットがあります。
-
-## 20.9 まとめ
-
--   **パッケージ**は `Cargo.toml` を持つビルド単位、**クレート**はコンパイル単位、**モジュール**はコードの整理と名前空間の単位。
--   `cargo new` で作成されるのはパッケージで、`src/main.rs` がバイナリクレートのルート、`src/lib.rs` がライブラリクレートのルートになる。
--   `mod` は、コードを整理・カプセル化するための名前空間を作成する。
-    -   `mod my_module { ... }` は、インラインでモジュールを定義する。
-    -   `mod my_module;` は、`src/my_module.rs` ファイルをモジュールとして読み込む。
--   デフォルトですべてのアイテムは**プライベート**。`pub` を付けることでモジュール外に公開される。
--   `use` は、他のモジュールへのパスを現在のスコープに持ち込み、コードを簡潔にする。
--   `super` は、親モジュールからの相対パスでアイテムを参照する。
--   `struct` はフィールドごとに、`enum` は全体で公開・非公開を設定できる。
--   実践的なプロジェクトでは、ロジックをライブラリクレートに、実行部分をバイナリクレートに分離することが多い。
+-   コードが大きくなったら、**モジュール**を使って関連する機能をグループ化し、整理する。
+-   **`mod { ... }`** を使えば、1 つのファイル内でコードをグループ化できる。
+-   モジュール内のアイテムはデフォルトで**プライベート**。**`pub`** を付けて、外部に公開する API を明示的に定義する。
+-   **`mod my_module;`** と宣言することで、モジュールを `src/my_module.rs` のような別ファイルに分割できる。
+-   **`use`** キーワードは、長いパスをスコープに持ち込み、コードを簡潔にする。
+-   **`super`** キーワードは、親モジュールを指す相対パス (`..` のようなもの)。
+-   **`struct`** はフィールドごとに公開範囲を設定でき、**`enum`** はバリアント全体が公開される。
 
 ---
 
