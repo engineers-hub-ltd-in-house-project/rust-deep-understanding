@@ -76,17 +76,17 @@ let user2 = User {
 `..user1` は、`user2` で明示的に設定されていないフィールドの値を `user1` から持ってくる、という意味です。
 
 ここで最後の `println!` のコメントを外して `cargo run` してみましょう。
-`borrow of partially moved value: user1` というエラーが出ます。`username` フィールドの `String` は `Copy` トレイトを持たないため、`user2` の作成時に所有権が `user1` から `user2` に **ムーブ** してしまいました。そのため、`user1.username` にはもうアクセスできません。一方で、`active` や `sign_in_count` のような `Copy` トレイトを持つフィールドはコピーされるだけなので、`user1.active` にはアクセスできます。この挙動は所有権のルールそのものです。
+`borrow of partially moved value: user1` というエラーが出ます。`username` フィールドの `String` は `Copy` トレイトを持たないため、`user2` の作成時に所有権が `user1` から `user2` に ムーブ してしまいました。そのため、`user1.username` にはもうアクセスできません。一方で、`active` や `sign_in_count` のような `Copy` トレイトを持つフィールドはコピーされるだけなので、`user1.active` にはアクセスできます。この挙動は所有権のルールそのものです。
 
 ### 2. タプル構造体とユニット様構造体
 
-- **タプル構造体**: フィールド名はなく、型の定義だけを持つ構造体です。タプル全体に名前を付けたい場合に便利です。
+- タプル構造体: フィールド名はなく、型の定義だけを持つ構造体です。タプル全体に名前を付けたい場合に便利です。
   ```rust
   struct Color(i32, i32, i32);
   let black = Color(0, 0, 0);
   ```
 [Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=struct%20Color(i32%2C%20i32%2C%20i32)%3B%0A%0Afn%20main()%20%7B%0A%20%20%20%20let%20black%20%3D%20Color(0%2C%200%2C%200)%3B%0A%7D)
-- **ユニット様構造体**: フィールドを一切持たない構造体です。ある型に対してトレイトを実装したいが、格納すべきデータがない場合に役立ちます。
+- ユニット様構造体: フィールドを一切持たない構造体です。ある型に対してトレイトを実装したいが、格納すべきデータがない場合に役立ちます。
   ```rust
   struct AlwaysEqual;
   let subject = AlwaysEqual;
@@ -185,7 +185,7 @@ fn main() {
 
 ## 9.4 関連関数 (Associated Functions)
 
-`impl` ブロックの中には、`self` を第一引数として取らない関数も定義できます。これを **関連関数 (associated function)** と呼びます。これは、他の言語における「静的メソッド (static method)」と似ています。
+`impl` ブロックの中には、`self` を第一引数として取らない関数も定義できます。これを 関連関数 (associated function) と呼びます。これは、他の言語における「静的メソッド (static method)」と似ています。
 
 関連関数は、構造体名と `::` 構文を使って呼び出します。構造体の新しいインスタンスを返すコンストラクタとしてよく使われます。
 

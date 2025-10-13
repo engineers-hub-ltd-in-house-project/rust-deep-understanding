@@ -196,24 +196,24 @@ Python や Go のようにガベージコレクタ (GC) を持つ言語では、
 
 int* dangle() {
     int x = 123;
-    printf("Inside dangle(): Address of x = %p\n", (void*)&x);
+    printf("Inside dangle(): Address of x = %pn", (void*)&x);
     fflush(stdout); // 出力バッファを強制的にフラッシュ
     return &x; // x のメモリアドレスを返す
 } // 関数が終わると x は破棄され、このメモリ領域は無効になる
 
 int main() {
     int* ptr = dangle();
-    printf("Inside main(): Pointer ptr = %p\n", (void*)ptr);
+    printf("Inside main(): Pointer ptr = %pn", (void*)ptr);
     fflush(stdout);
 
     // ptr が指すメモリは既に無効！
-    printf("Dereferencing dangling pointer: *ptr = %d\n", *ptr);
+    printf("Dereferencing dangling pointer: *ptr = %dn", *ptr);
     fflush(stdout);
 
-    printf("\nAttempting to WRITE to the dangling pointer...\n");
+    printf("nAttempting to WRITE to the dangling pointer...n");
     fflush(stdout);
     *ptr = 789; // 無効なメモリへの書き込み！ここでクラッシュする可能性が高い
-    printf("Value after write attempt: *ptr = %d\n", *ptr); // この行は実行されないかもしれない
+    printf("Value after write attempt: *ptr = %dn", *ptr); // この行は実行されないかもしれない
     fflush(stdout);
 
     return 0;
@@ -253,16 +253,16 @@ cat << 'EOF' > dangle.c
 
 int* dangle() {
     int x = 123;
-    printf("Inside dangle(): Address of x = %p\n", (void*)&x);
+    printf("Inside dangle(): Address of x = %pn", (void*)&x);
     return &x;
 }
 
 int main() {
     int* ptr = dangle();
-    printf("Inside main(): Pointer ptr = %p\n", (void*)ptr);
+    printf("Inside main(): Pointer ptr = %pn", (void*)ptr);
 
     // ptrが指すメモリは無効になっているはず
-    printf("Dereferencing dangling pointer: *ptr = %d\n", *ptr);
+    printf("Dereferencing dangling pointer: *ptr = %dn", *ptr);
 
     return 0;
 }

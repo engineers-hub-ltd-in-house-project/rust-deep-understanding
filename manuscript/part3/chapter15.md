@@ -52,8 +52,8 @@ fn main() {
 ```
 [Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=//%20src/main.rs%0A%0Astruct%20NewsArticle%20%7B%0A%20%20%20%20headline%3A%20String%2C%0A%20%20%20%20author%3A%20String%2C%0A%7D%0A%0Astruct%20Tweet%20%7B%0A%20%20%20%20username%3A%20String%2C%0A%20%20%20%20content%3A%20String%2C%0A%7D%0A%0A//%20%E3%83%8B%E3%83%A5%E3%83%BC%E3%82%B9%E8%A8%98%E4%BA%8B%E3%82%92%E8%A6%81%E7%B4%84%E3%81%99%E3%82%8B%E9%96%A2%E6%95%B0%0Afn%20summarize_article%28article%3A%20%26NewsArticle%29%20-%3E%20String%20%7B%0A%20%20%20%20format%21%28%22%7B%7D%2C%20by%20%7B%7D%22%2C%20article.headline%2C%20article.author%29%0A%7D%0A%0A//%20%E3%83%84%E3%82%A4%E3%83%BC%E3%83%88%E3%82%92%E8%A6%81%E7%B4%84%E3%81%99%E3%82%8B%E9%96%A2%E6%95%B0%0Afn%20summarize_tweet%28tweet%3A%20%26Tweet%29%20-%3E%20String%20%7B%0A%20%20%20%20format%21%28%22%7B%7D%3A%20%7B%7D%22%2C%20tweet.username%2C%20tweet.content%29%0A%7D%0A%0Afn%20main%28%29%20%7B%0A%20%20%20%20let%20tweet%20%3D%20Tweet%20%7B%0A%20%20%20%20%20%20%20%20username%3A%20String%3A%3Afrom%28%22horse_ebooks%22%29%2C%0A%20%20%20%20%20%20%20%20content%3A%20String%3A%3Afrom%28%22of%20course%2C%20as%20you%20probably%20already%20know%2C%20people%22%29%2C%0A%20%20%20%20%7D%3B%0A%20%20%20%20println%21%28%221%20new%20tweet%3A%20%7B%7D%22%2C%20summarize_tweet%28%26tweet%29%29%3B%0A%7D)
 これでも動きますが、大きな問題があります。
-- **コードの重複**: `summarize_...` という似たような関数が型の数だけ増えていきます。
-- **拡張性の欠如**: タイムラインに新しい種類のアイテム（例えばブログ投稿）を追加するたびに、新しい `summarize_...` 関数を作り、タイムラインを表示するロジックも修正しなければなりません。
+- コードの重複: `summarize_...` という似たような関数が型の数だけ増えていきます。
+- 拡張性の欠如: タイムラインに新しい種類のアイテム（例えばブログ投稿）を追加するたびに、新しい `summarize_...` 関数を作り、タイムラインを表示するロジックも修正しなければなりません。
 
 この問題をエレガントに解決するのが トレイト (Trait) です。
 
