@@ -61,11 +61,11 @@ fn main() {
 まず、`Summary` というトレイトを定義しましょう。これには `summarize` というメソッドのシグネチャ（型定義）が含まれます。
 
 ```rust
-pub trait Summary {
+trait Summary {
     fn summarize(&self) -> String;
 }
 ```
-[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=pub%20trait%20Summary%20%7B%0A%20%20%20%20fn%20summarize%28%26self%29%20-%3E%20String%3B%0A%7D)
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=trait%20Summary%20%7B%0A%20%20%20%20fn%20summarize%28%26self%29%20-%3E%20String%3B%0A%7D)
 
 次に、このトレイトを各構造体に実装 (`impl`) します。
 
@@ -121,7 +121,7 @@ fn main() {
 トレイトのメソッドには、デフォルトの振る舞いを実装しておくこともできます。これにより、実装する型側でメソッドをオーバーライドしない限り、このデフォルトの振る舞いが使われます。
 
 ```rust
-pub trait Summary {
+trait Summary {
     fn summarize_author(&self) -> String;
 
     // デフォルト実装を持つメソッド
@@ -140,7 +140,7 @@ impl Summary for Tweet {
 // main 関数で tweet.summarize() を呼ぶと、デフォルト実装が使われる
 // -> "(Read more from @horse_ebooks...)"
 ```
-[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=pub%20trait%20Summary%20%7B%0A%20%20%20%20fn%20summarize_author%28%26self%29%20-%3E%20String%3B%0A%0A%20%20%20%20//%20%E3%83%87%E3%83%95%E3%82%A9%E3%83%AB%E3%83%88%E5%AE%9F%E8%A3%85%E3%82%92%E6%8C%81%E3%81%A4%E3%83%A1%E3%82%BD%E3%83%83%E3%83%89%0A%20%20%20%20fn%20summarize%28%26self%29%20-%3E%20String%20%7B%0A%20%20%20%20%20%20%20%20format%21%28%22%28Read%20more%20from%20%7B%7D...%29%22%2C%20self.summarize_author%28%29%29%0A%20%20%20%20%7D%0A%7D%0A%0A//%20Tweet%20%E3%81%AB%E5%AE%9F%E8%A3%85%E3%81%99%E3%82%8B%E5%A0%B4%E5%90%88%E3%80%81summarize_author%20%E3%82%92%E5%AE%9F%E8%A3%85%E3%81%99%E3%82%8B%E3%81%A0%E3%81%91%E3%81%A7%E3%82%88%E3%81%84%0Aimpl%20Summary%20for%20Tweet%20%7B%0A%20%20%20%20fn%20summarize_author%28%26self%29%20-%3E%20String%20%7B%0A%20%20%20%20%20%20%20%20format%21%28%22%40%7B%7D%22%2C%20self.username%29%0A%20%20%20%20%7D%0A%7D%0A%0A//%20main%20%E9%96%A2%E6%95%B0%E3%81%A7%20tweet.summarize%28%29%20%E3%82%92%E5%91%BC%E3%81%B6%E3%81%A8%E3%80%81%E3%83%87%E3%83%95%E3%82%A9%E3%83%AB%E3%83%88%E5%AE%9F%E8%A3%85%E3%81%8C%E4%BD%BF%E3%82%8F%E3%82%8C%E3%82%8B%0A//%20-%3E%20%22%28Read%20more%20from%20%40horse_ebooks...%29%22)
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=trait%20Summary%20%7B%0A%20%20%20%20fn%20summarize_author%28%26self%29%20-%3E%20String%3B%0A%0A%20%20%20%20//%20%E3%83%87%E3%83%95%E3%82%A9%E3%83%AB%E3%83%88%E5%AE%9F%E8%A3%85%E3%82%92%E6%8C%81%E3%81%A4%E3%83%A1%E3%82%BD%E3%83%83%E3%83%89%0A%20%20%20%20fn%20summarize%28%26self%29%20-%3E%20String%20%7B%0A%20%20%20%20%20%20%20%20format!%28%22%28Read%20more%20from%20%7B%7D...%29%22%2C%20self.summarize_author%28%29%29%0A%20%20%20%20%7D%0A%7D%0A%0A//%20Tweet%20%E3%81%AB%E5%AE%9F%E8%A3%85%E3%81%99%E3%82%8B%E5%A0%B4%E5%90%88%E3%80%81summarize_author%20%E3%82%92%E5%AE%9F%E8%A3%85%E3%81%99%E3%82%8B%E3%81%A0%E3%81%91%E3%81%A7%E3%82%88%E3%81%84%0Aimpl%20Summary%20for%20Tweet%20%7B%0A%20%20%20%20fn%20summarize_author%28%26self%29%20-%3E%20String%20%7B%0A%20%20%20%20%20%20%20%20format!%28%22%40%7B%7D%22%2C%20self.username%29%0A%20%20%20%20%7D%0A%7D%0A%0A//%20main%20%E9%96%A2%E6%95%B0%E3%81%A7%20tweet.summarize%28%29%20%E3%82%92%E5%91%BC%E3%81%B6%E3%81%A8%E3%80%81%E3%83%87%E3%83%95%E3%82%A9%E3%83%AB%E3%83%88%E5%AE%9F%E8%A3%85%E3%81%8C%E4%BD%BF%E3%82%8F%E3%82%8C%E3%82%8B%0A//%20-%3E%20%22%28Read%20more%20from%20%40horse_ebooks...%29%22)
 `Tweet` の `impl` ブロックでは `summarize` を定義していませんが、トレイトのデフォルト実装が利用できます。ただし、デフォルト実装は、同じトレイト内の他のメソッド（この場合は`summarize_author`）を呼び出すことができますが、その逆はできません。
 
 ## 14.4 まとめ
