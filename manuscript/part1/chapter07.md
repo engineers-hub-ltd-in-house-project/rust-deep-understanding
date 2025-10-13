@@ -191,14 +191,22 @@ Python や Go のようにガベージコレクタ (GC) を持つ言語では、
 
 int* dangle() {
     int x = 123;
+    printf("Inside dangle(): Address of x = %p\n", (void*)&x);
     return &x; // x のメモリアドレスを返す
 } // 関数が終わると x は破棄され、このメモリ領域は無効になる
 
 int main() {
     int* ptr = dangle();
+    printf("Inside main(): Pointer ptr = %p\n", (void*)ptr);
+
     // ptr が指すメモリは既に無効！
     // ここで *ptr を読み書きすると、何が起こるかわからない（未定義動作）
-    printf("Value: %d\n", *ptr); // クラッシュするか、ゴミデータが表示される
+    printf("Dereferencing dangling pointer: *ptr = %d\n", *ptr);
+
+    printf("\nAttempting to WRITE to the dangling pointer...\n");
+    *ptr = 789; // 無効なメモリへの書き込み！非常に危険。
+    printf("Value after write attempt: *ptr = %d\n", *ptr);
+
     return 0;
 }
 ```
@@ -225,9 +233,27 @@ docker build -t dangle-test .
 docker run dangle-test
 ```
 
-実行すると、`Segmentation fault` でプログラムがクラッシュしたり、`Value: 0` やまったく無関係な巨大な数値など、意味不明な「ゴミデータ」が表示されたりするはずです。何度か実行すると結果が変わるかもしれません。これが、解放済みのメモリにアクセスしてしまう「未定義動作」の怖さです。
+実行すると、多くの場合 `Segmentation fault` というエラーでプログラムがクラッシュします。これは、OSが保護されたメモリ領域への不正な書き込みを検知して、プログラムを強制終了させたことを意味します。
 
-`dangle` 関数は、関数内で確保した変数 `x` のアドレスを返していますが、関数が終了すると同時に `x` のためのメモリは解放されてしまいます。`main` 関数で `ptr` が受け取ったアドレスは、もはや有効なデータを指していません。このような無効なポインタを使うと、プログラムがクラッシュしたり、予期せぬ値を読み込んだり、深刻なセキュリティ上の脆弱性を引き起こす可能性があります。
+もしクラッシュしなかったとしても、以下のような予測不能な出力が得られるでしょう。
+
+```text
+Inside dangle(): Address of x = 0x7ffc1234abcd
+Inside main(): Pointer ptr = 0x7ffc1234abcd
+Dereferencing dangling pointer: *ptr = 123
+Attempting to WRITE to the dangling pointer...
+Segmentation fault
+```
+あるいは
+```text
+Inside dangle(): Address of x = 0x7ffd5678efgh
+Inside main(): Pointer ptr = 0x7ffd5678efgh
+Dereferencing dangling pointer: *ptr = 32765
+Attempting to WRITE to the dangling pointer...
+Segmentation fault
+```
+
+重要なのは、`dangle` 関数が終了した時点で `ptr` が指すアドレスは無効になっているという事実です。その後の読み書きは、たまたま動いているように見えても、いつプログラム全体を破壊するか分からない時限爆弾のようなものです。これが解放済みのメモリにアクセスしてしまう「未定義動作」の本当の怖さです。
 
 Rust は、この種のバグをコンパイル時に完全に排除します。ボローチェッカーが、すべての参照が常に有効なデータを指していることを保証してくれるのです。では、Rust で同じことをしようとするとどうなるか、見てみましょう。
 
