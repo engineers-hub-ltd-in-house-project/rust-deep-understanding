@@ -104,10 +104,129 @@ fn main() {
 - `PartialEq`, `PartialOrd`: `f32` の `NaN` (Not a Number) のように、自分自身と比較しても等しくならない値が存在する場合のためのトレイト。ほとんどの場合は `Eq` や `Ord` まで実装して問題ない。
 - `Eq`, `Ord`: 完全な等価性・順序性を持つ型のためのトレイト。
 
-## 17.4 まとめ
+---
+
+ここまでは `derive` で自動的に実装できるトレイトを見てきました。しかし、実際の開発では、手動で実装することでコードの柔軟性や表現力を大きく向上させる、重要な標準トレイトが数多く存在します。
+
+## 17.4 型変換の達人：`From` と `Into`
+
+`From` と `Into` は、ある型から別の型への変換を担う、非常に重要なトレイトです。
+
+- `From<T>`: 型 `T` から自分自身の型 (`Self`) へ変換するロジックを実装します。
+- `Into<T>`: 自分自身の型 (`Self`) から型 `T` へ変換します。
+
+この二つには面白い関係があります。`impl From<T> for U` を実装すると、標準ライブラリが自動的に `impl Into<U> for T` を実装してくれるのです。つまり、私たちは `From` を実装するだけで、逆方向の `Into` も手に入れることができます。
+
+### 試してみよう：タプルから `Point` を作る
+
+タプル `(i32, i32)` から `Point` 型を生成できるように、`From` トレイトを実装してみましょう。
+
+```rust
+#[derive(Debug)]
+struct Point {
+    x: i32,
+    y: i32,
+}
+
+// (i32, i32) 型から Point 型への変換を実装
+impl From<(i32, i32)> for Point {
+    fn from(tuple: (i32, i32)) -> Self {
+        Point { x: tuple.0, y: tuple.1 }
+    }
+}
+
+fn main() {
+    let tuple = (10, 20);
+
+    // From を使った変換
+    let p1 = Point::from(tuple);
+    println!("p1 from From: {:?}", p1);
+
+    // Into を使った変換 (型推論が必要な場合がある)
+    // From を実装したので、into() も自動的に使えるようになっている
+    let p2: Point = tuple.into();
+    println!("p2 from Into: {:?}", p2);
+}
+```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=%23%5Bderive%28Debug%29%5D%0Astruct%20Point%20%7B%0A%20%20%20%20x%3A%20i32%2C%0A%20%20%20%20y%3A%20i32%2C%0A%7D%0A%0A%2F%2F%20%28i32%2C%20i32%29%20%E5%9E%8B%E3%81%8B%E3%82%89%20Point%20%E5%9E%8B%E3%81%B8%E3%81%AE%E5%A4%89%E6%8F%9B%E3%82%92%E5%AE%9F%E8%A3%85%0Aimpl%20From%3C%28i32%2C%20i32%29%3E%20for%20Point%20%7B%0A%20%20%20%20fn%20from%28tuple%3A%20%28i32%2C%20i32%29%29%20-%3E%20Self%20%7B%0A%20%20%20%20%20%20%20%20Point%20%7B%20x%3A%20tuple.0%2C%20y%3A%20tuple.1%20%7D%0A%20%20%20%20%7D%0A%7D%0A%0Afn%20main%28%29%20%7B%0A%20%20%20%20let%20tuple%20%3D%20%2810%2C%2020%29%3B%0A%0A%20%20%20%20%2F%2F%20From%20%E3%82%92%E4%BD%BF%E3%81%A3%E3%81%9F%E5%A4%89%E6%8F%9B%0A%20%20%20%20let%20p1%20%3D%20Point%3A%3Afrom%28tuple%29%3B%0A%20%20%20%20println!%28%22p1%20from%20From%3A%20%7B%3A%3F%7D%22%2C%20p1%29%3B%0A%0A%20%20%20%20%2F%2F%20Into%20%E3%82%92%E4%BD%BF%E3%81%A3%E3%81%9F%E5%A4%89%E6%8F%9B%20%28%E5%9E%8B%E6%8E%A8%E8%AB%96%E3%81%8C%E5%BF%85%E8%A6%81%E3%81%AA%E5%A0%B4%E5%90%88%E3%81%8C%E3%81%82%E3%82%8B%29%0A%20%20%20%20%2F%2F%20From%20%E3%82%92%E5%AE%9F%E8%A3%85%E3%81%97%E3%81%9F%E3%81%AE%E3%81%A7%E3%80%81into%28%29%20%E3%82%82%E8%87%AA%E5%8B%95%E7%9A%84%E3%81%AB%E4%BD%BF%E3%81%88%E3%82%8B%E3%82%88%E3%81%86%E3%81%AB%E3%81%AA%E3%81%A3%E3%81%A6%E3%81%84%E3%82%8B%0A%20%20%20%20let%20p2%3A%20Point%20%3D%20tuple.into%28%29%3B%0A%20%20%20%20println!%28%22p2%20from%20Into%3A%20%7B%3A%3F%7D%22%2C%20p2%29%3B%0A%7D)
+このように、`From` を実装することで、型変換のロジックをカプセル化し、コードの可読性を高めることができます。
+
+## 17.5 柔軟な借用：`AsRef` と `AsMut`
+
+`AsRef` と `AsMut` は、所有権を奪うことなく、ある型から別の型への「安価な参照変換」を提供するためのトレイトです。
+
+特によく使われるのが `AsRef<str>` です。`String` と `&str` の両方を透過的に扱いたい関数を書く際に絶大な効果を発揮します。
+
+### 試してみよう：`String` も `&str` も受け取る関数
+
+```rust
+// ジェネリックな引数 T を取り、T は AsRef<str> を実装している必要がある、という制約
+fn greet<T: AsRef<str>>(name: T) {
+    // .as_ref() を呼ぶことで、&str 型の参照を取得できる
+    println!("Hello, {}!", name.as_ref());
+}
+
+fn main() {
+    let name_string = String::from("Alice");
+    let name_str = "Bob";
+
+    // String 型を渡しても...
+    greet(name_string);
+
+    // &str 型を渡しても...
+    greet(name_str);
+    // どちらも同じように動作する！
+}
+```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=%2F%2F%20%E3%82%B8%E3%82%A7%E3%83%8D%E3%83%AA%E3%83%83%E3%82%AF%E3%81%AA%E5%BC%95%E6%95%B0%20T%20%E3%82%92%E5%8F%96%E3%82%8A%E3%80%81T%20%E3%81%AF%20AsRef%3Cstr%3E%20%E3%82%92%E5%AE%9F%E8%A3%85%E3%81%97%E3%81%A6%E3%81%84%E3%82%8B%E5%BF%85%E8%A6%81%E3%81%8C%E3%81%82%E3%82%8B%E3%80%81%E3%81%A8%E3%81%84%E3%81%86%E5%88%B6%E7%B4%84%0Afn%20greet%3CT%3A%20AsRef%3Cstr%3E%3E%28name%3A%20T%29%20%7B%0A%20%20%20%20%2F%2F%20.as_ref%28%29%20%E3%82%92%E5%91%BC%E3%81%B6%E3%81%93%E3%81%A8%E3%81%A7%E3%80%81%26str%20%E5%9E%8B%E3%81%AE%E5%8F%82%E7%85%A7%E3%82%92%E5%8F%96%E5%BE%97%E3%81%A7%E3%81%8D%E3%82%8B%0A%20%20%20%20println!%28%22Hello%2C%20%7B%7D!%22%2C%20name.as_ref%28%29%29%3B%0A%7D%0A%0Afn%20main%28%29%20%7B%0A%20%20%20%20let%20name_string%20%3D%20String%3A%3Afrom%28%22Alice%22%29%3B%0A%20%20%20%20let%20name_str%20%3D%20%22Bob%22%3B%0A%0A%20%20%20%20%2F%2F%20String%20%E5%9E%8B%E3%82%92%E6%B8%A1%E3%81%97%E3%81%A6%E3%82%82...%0A%20%20%20%20greet%28name_string%29%3B%0A%0A%20%20%20%20%2F%2F%20%26str%20%E5%9E%8B%E3%82%92%E6%B8%A1%E3%81%97%E3%81%A6%E3%82%82...%0A%20%20%20%20greet%28name_str%29%3B%0A%20%20%20%20%2F%2F%20%E3%81%A9%E3%81%A1%E3%82%89%E3%82%82%E5%90%8C%E3%81%98%E3%82%88%E3%81%86%E3%81%AB%E5%8B%95%E4%BD%9C%E3%81%99%E3%82%8B%EF%BC%81%0A%7D)
+`AsRef` を使うことで、APIの利用者に無駄な型変換を強いることなく、より柔軟で使いやすい関数を設計できます。
+
+## 17.6 パターン：ゲッターメソッド
+
+トレイトではありませんが、実際の開発で非常によく使われるパターンが「ゲッター (Getters)」です。これは、`struct` のプライベートなフィールドの値を外部に公開するための、読み取り専用のメソッドです。
+
+### なぜ直接アクセスしないのか？
+
+フィールドを `pub` にして直接アクセスさせることもできますが、ゲッターメソッドを介することで「カプセル化」が実現できます。将来的に、フィールドの値を返す前に何らかの計算やフォーマットを挟む必要が出たとしても、関数のシグネチャさえ変えなければ、APIの利用者に影響を与えることなく内部実装を変更できます。
+
+```rust
+#[derive(Debug)]
+struct User {
+    username: String,
+    age: u32,
+}
+
+impl User {
+    // username のゲッター
+    pub fn username(&self) -> &str {
+        &self.username
+    }
+
+    // age のゲッター
+    pub fn age(&self) -> u32 {
+        self.age
+    }
+}
+
+fn main() {
+    let user = User {
+        username: "Goto".to_string(),
+        age: 42,
+    };
+    println!("User {} is {} years old.", user.username(), user.age());
+}
+```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=%23%5Bderive%28Debug%29%5D%0Astruct%20User%20%7B%0A%20%20%20%20username%3A%20String%2C%0A%20%20%20%20age%3A%20u32%2C%0A%7D%0A%0Aimpl%20User%20%7B%0A%20%20%20%20%2F%2F%20username%20%E3%81%AE%E3%82%B2%E3%83%83%E3%82%BF%E3%83%BC%0A%20%20%20%20pub%20fn%20username%28%26self%29%20-%3E%20%26str%20%7B%0A%20%20%20%20%20%20%20%20%26self.username%0A%20%20%20%20%7D%0A%0A%20%20%20%20%2F%2F%20age%20%E3%81%AE%E3%82%B2%E3%83%83%E3%82%BF%E3%83%BC%0A%20%20%20%20pub%20fn%20age%28%26self%29%20-%3E%20u32%20%7B%0A%20%20%20%20%20%20%20%20self.age%0A%20%20%20%20%7D%0A%7D%0A%0Afn%20main%28%29%20%7B%0A%20%20%20%20let%20user%20%3D%20User%20%7B%0A%20%20%20%20%20%20%20%20username%3A%20%22Goto%22.to_string%28%29%2C%0A%20%20%20%20%20%20%20%20age%3A%2042%2C%0A%20%20%20%20%7D%3B%0A%20%20%20%20println!%28%22User%20%7B%7D%20is%20%7B%7D%20years%20old.%22%2C%20user.username%28%29%2C%20user.age%28%29%29%3B%0A%7D)
+
+このような定型的なコードは、`getset` のようなコミュニティクレートを使うことで自動生成することも可能です。これは、マクロの強力な一例です。
+
+## 17.7 まとめ
 
 - Rust で独自に定義した `struct` や `enum` は、デフォルトでは比較もコピーも表示もできない。
 - `#[derive]` 属性は、`Debug`, `Clone` といった標準的なトレイトの実装をコンパイラに自動生成させるための便利な機能。
+- `From` を実装することで、柔軟な型変換が可能になり、`Into` が自動的に提供される。
+- `AsRef` を使うことで、`String` と `&str` のように、所有権の有無が異なる型を透過的に扱える、柔軟な関数を設計できる。
+- ゲッターメソッドは、カプセル化を維持しつつ、内部のデータへの読み取りアクセスを提供する一般的なパターン。
 - `Clone` は明示的な複製、`Copy` は暗黙的なコピー。`Copy` は `Clone` を実装している必要がある。
 - `Debug` は開発者向け、`Display` はユーザー向けの文字列表現であり、`Display` は手動での実装が必要。
 
