@@ -121,7 +121,7 @@ fn main() {
     println!("{}, {}", r1, r2);
 }
 ```
-[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20main%28%29%20%7B%0A%20%20%20%20let%20mut%20s%20%3D%20String%3A%3Afrom%28%22hello%22%29%3B%0A%0A%20%20%20%20let%20r1%20%3D%20%26mut%20s%3B%0A%20%20%20%20let%20r2%20%3D%20%26mut%20s%3B%20//%202%E3%81%A4%E7%9B%AE%E3%81%AE%E5%8F%AF%E5%A4%89%E5%8F%82%E7%85%A7%E3%82%92%E4%BD%9C%E3%82%8D%E3%81%86%E3%81%A8%E3%81%99%E3%82%8B%E3%81%A8...%EF%BC%9F%0A%0A%20%20%20%20println%21%28%22%7B%7D%2C%20%7B%7D%22%2C%20r1%2C%20r2%29%3B%0A%7D)
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20main%28%29%20%7B%0A%20%20%20%20let%20mut%20s%20%3D%20String%3A%3Afrom%28%22hello%22%29%3B%0A%0A%20%20%20%20let%20r1%20%3D%20%26mut%20s%3B%0A%20%20%20%20let%20r2%20%3D%20%26mut%20s%3B%20//%202%E3%81%A4%E7%9B%AE%E3%81%AE%E5%8F%AF%E5%A4%89%E5%8F%82%E7%85%A7%E3%82%92%E4%BD%9C%E3%82%8D%E3%81%86%E3%81%A8...%EF%BC%9F%0A%0A%20%20%20%20println%21%28%22%7B%7D%2C%20%7B%7D%22%2C%20r1%2C%20r2%29%3B%0A%7D)
 
 これを `cargo run` すると、コンパイラに怒られます。
 
@@ -184,28 +184,33 @@ Python や Go のようにガベージコレクタ (GC) を持つ言語では、
 
 しかし、C や C++ のように手動でメモリを管理する言語では、これは「ダングリングポインタ」として知られる、非常に危険なバグの原因となってきました。
 
-例えば、以下のような C のコードを考えてみましょう。
+例えば、以下のような C のコードを考えてみましょう。各 `printf` の後に `fflush(stdout)` を追加しているのは、プログラムがクラッシュする直前の出力まで確実に行うためのおまじないです。
 
 ```c
 #include <stdio.h>
+#include <stdlib.h> // fflush のために追加
 
 int* dangle() {
     int x = 123;
     printf("Inside dangle(): Address of x = %p\n", (void*)&x);
+    fflush(stdout); // 出力バッファを強制的にフラッシュ
     return &x; // x のメモリアドレスを返す
 } // 関数が終わると x は破棄され、このメモリ領域は無効になる
 
 int main() {
     int* ptr = dangle();
     printf("Inside main(): Pointer ptr = %p\n", (void*)ptr);
+    fflush(stdout);
 
     // ptr が指すメモリは既に無効！
-    // ここで *ptr を読み書きすると、何が起こるかわからない（未定義動作）
     printf("Dereferencing dangling pointer: *ptr = %d\n", *ptr);
+    fflush(stdout);
 
     printf("\nAttempting to WRITE to the dangling pointer...\n");
-    *ptr = 789; // 無効なメモリへの書き込み！非常に危険。
-    printf("Value after write attempt: *ptr = %d\n", *ptr);
+    fflush(stdout);
+    *ptr = 789; // 無効なメモリへの書き込み！ここでクラッシュする可能性が高い
+    printf("Value after write attempt: *ptr = %d\n", *ptr); // この行は実行されないかもしれない
+    fflush(stdout);
 
     return 0;
 }
@@ -213,47 +218,80 @@ int main() {
 
 #### 試してみよう：Dockerで「痛み」を体験する
 
-オンラインの実行環境では、安全上の理由からこのコードの挙動が分かりにくい場合があります。実際の環境で何が起こるかを見るために、Docker を使ってこの「痛み」を体験してみましょう。
+最近のコンパイラやOSは非常に賢くなっており、単純に危険なコードを実行しようとしても、安全のために挙動が変更されてしまい、「痛み」を体験しにくいことがあります。
 
-この書籍では、実行可能なサンプルコードを `code-samples` ディレクトリに章ごとのフォルダに分けてまとめています。この C のサンプルは、`code-samples/chapter07/dangling-pointer-c/` の中に `dangle.c` と `Dockerfile` として配置されています。
+そこで、Dockerコンテナの中で対話的にシェルを起動し、自分たちの手でCコードをコンパイル・実行することで、何が起きているのかをより詳しく見ていきましょう。
 
-ターミナルで、まずこのディレクトリに移動してください。
+##### 1. Dockerコンテナを起動する
 
-```bash
-cd code-samples/chapter07/dangling-pointer-c/
-```
-
-次に、以下のコマンドを実行して Docker イメージをビルドし、コンテナを実行します。
+まず、以下のコマンドを実行して、C言語のコンパイラ (`gcc`) がインストールされたコンテナを起動し、その中のシェル (`bash`) を操作できるようにします。
 
 ```bash
-# 1. Docker イメージをビルド
-docker build -t dangle-test .
+docker run -it --rm gcc:9 bash
+```
+* `-it` は、対話的にシェルを操作するためのオプションです。
+* `--rm` は、コンテナを終了したときに自動的に削除するためのオプションです。
+* `gcc:9` は、使用するイメージ（少し前のバージョンのGCC）です。
+* `bash` は、コンテナ内で起動するコマンドです。
 
-# 2. コンテナを実行
-docker run dangle-test
+コマンドを実行すると、`root@<コンテナID>:/#` のようなプロンプトが表示され、コンテナの中に入ったことがわかります。
+
+##### 2. Cソースファイルを作成する
+
+次に、コンテナの中で `dangle.c` ファイルを作成します。`cat` コマンドを使うと、ターミナルから直接ファイルに書き込めて便利です。
+
+以下の `cat << 'EOF' > dangle.c` から `EOF` までのブロック全体をコピーして、ターミナルに貼り付けてEnterキーを押してください。
+
+```bash
+cat << 'EOF' > dangle.c
+#include <stdio.h>
+#include <stdlib.h>
+
+int* dangle() {
+    int x = 123;
+    printf("Inside dangle(): Address of x = %p\n", (void*)&x);
+    return &x;
+}
+
+int main() {
+    int* ptr = dangle();
+    printf("Inside main(): Pointer ptr = %p\n", (void*)ptr);
+
+    // ptrが指すメモリは無効になっているはず
+    printf("Dereferencing dangling pointer: *ptr = %d\n", *ptr);
+
+    return 0;
+}
+EOF
 ```
 
-実行すると、多くの場合 `Segmentation fault` というエラーでプログラムがクラッシュします。これは、OSが保護されたメモリ領域への不正な書き込みを検知して、プログラムを強制終了させたことを意味します。
+`ls` コマンドを実行して `dangle.c` ファイルが作成されていることを確認しましょう。
 
-もしクラッシュしなかったとしても、以下のような予測不能な出力が得られるでしょう。
+##### 3. コンパイルして実行する
+
+いよいよCコードをコンパイルし、実行します。最適化を無効にする `-O0` フラグを付けてコンパイルしてみましょう。
+
+```bash
+# コンパイル (-O0 で最適化を無効化)
+gcc -O0 -o dangle dangle.c -Wall
+
+# 実行
+./dangle
+```
+
+これを実行すると、今度こそ以下のような出力と共に `Segmentation fault` が発生するはずです。
 
 ```text
 Inside dangle(): Address of x = 0x7ffc1234abcd
 Inside main(): Pointer ptr = 0x7ffc1234abcd
-Dereferencing dangling pointer: *ptr = 123
-Attempting to WRITE to the dangling pointer...
-Segmentation fault
-```
-あるいは
-```text
-Inside dangle(): Address of x = 0x7ffd5678efgh
-Inside main(): Pointer ptr = 0x7ffd5678efgh
-Dereferencing dangling pointer: *ptr = 32765
-Attempting to WRITE to the dangling pointer...
 Segmentation fault
 ```
 
-重要なのは、`dangle` 関数が終了した時点で `ptr` が指すアドレスは無効になっているという事実です。その後の読み書きは、たまたま動いているように見えても、いつプログラム全体を破壊するか分からない時限爆弾のようなものです。これが解放済みのメモリにアクセスしてしまう「未定義動作」の本当の怖さです。
+`dangle` 関数が返したアドレスを `main` 関数は正しく受け取っていますが、そのアドレスが指すメモリにアクセスしようとした瞬間に、OSによってプログラムが強制終了されました。これこそがダングリングポインタの危険な挙動です。
+
+この体験を通して、Rustのコンパイラがコンパイル時にこの危険を完全に防いでくれることの価値を、より深く理解できたのではないでしょうか。
+
+コンテナから抜けるには `exit` と入力してください。
 
 Rust は、この種のバグをコンパイル時に完全に排除します。ボローチェッカーが、すべての参照が常に有効なデータを指していることを保証してくれるのです。では、Rust で同じことをしようとするとどうなるか、見てみましょう。
 
@@ -309,7 +347,7 @@ fn main() {
     println!("スライス2: {}", world);
 }
 ```
-[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20main%28%29%20%7B%0A%20%20%20%20let%20s%20%3D%20String%3A%3Afrom%28%22hello%20world%22%29%3B%0A%0A%20%20%20%20%2F%2F%20%5B%E9%96%8B%E5%A7%8B%E3%82%A4%E3%83%B3%E3%83%87%E3%83%83%E3%82%AF%E3%82%B9..%E7%B5%82%E4%BA%86%E3%82%A4%E3%83%B3%E3%83%87%E3%83%83%E3%82%AF%E3%82%B9%5D%20%E3%81%A8%E3%81%84%E3%81%86%E5%BD%A2%E5%BC%8F%E3%81%A7%E4%B8%80%E9%83%A8%E5%88%86%E3%82%92%E5%88%87%E3%82%8A%E5%87%BA%E3%81%99%0A%20%20%20%20let%20hello%20%3D%20%26s%5B0..5%5D%3B%0A%20%20%20%20let%20world%20%3D%20%26s%5B6..11%5D%3B%0A%0A%20%20%20%20%2F%2F%20s%20%E3%81%AE%E6%89%80%E6%9C%89%E6%A8%A9%E3%81%AF%E7%A7%BB%E5%8B%95%E3%81%97%E3%81%A6%E3%81%84%E3%81%AA%E3%81%84%E3%81%AE%E3%81%A7%E3%80%81s%20%E3%82%82%E3%82%B9%E3%83%A9%E3%82%A4%E3%82%B9%E3%82%82%E4%B8%A1%E6%96%B9%E4%BD%BF%E3%81%88%E3%82%8B%0A%20%20%20%20println!%28%22%E5%85%83%E3%81%AE%E6%96%87%E5%AD%97%E5%88%97%3A%20%7B%7D%22%2C%20s%29%3B%0A%20%20%20%20println!%28%22%E3%82%B9%E3%83%A9%E3%82%A4%E3%82%B91%3A%20%7B%7D%22%2C%20hello%29%3B%0A%20%20%20%20println!%28%22%E3%82%B9%E3%83%A9%E3%82%A4%E3%82%B92%3A%20%7B%7D%22%2C%20world%29%3B%0A%7D)
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20main%28%29%20%7B%0A%20%20%20%20let%20s%20%3D%20String%3A%3Afrom%28%22hello%20world%22%29%3B%0A%0A%20%20%20%20%2F%2F%20%5B%E9%96%8B%E5%A7%8B%E3%82%A4%E3%83%B3%E3%83%87%E3%83%83%E3%82%AF%E3%82%B9..%E7%B5%82%E4%BA%86%E3%82%A4%E3%83%B3%E3%83%87%E3%83%83%E3%82%AF%E3%82%B9%5D%20%E3%81%A8%E3%81%84%E3%81%86%E5%BD%A2%E5%BC%8F%E3%81%A7%E4%B8%80%E9%83%A8%E5%88%86%E3%82%92%E5%88%87%E3%82%8A%E5%87%BA%E3%81%99%0A%20%20%20%20let%20hello%20%3D%20%26s%5B0..5%5D%3B%0A%20%20%20%20let%20world%20%3D%20%26s%5B6..11%5D%3B%0A%0A%20%20%20%20%2F%2F%20s%20%E3%81%AE%E6%89%80%E6%9C%89%E6%A8%A9%E3%81%AF%E7%A7%BB%E5%8B%95%E3%81%97%E3%81%A6%E3%81%84%E3%81%AA%E3%81%84%E3%81%AE%E3%81%A7%E3%80%81s%20%E3%82%82%E3%82%B9%E3%83%A9%E3%82%A4%E3%82%B9%E3%82%82%E4%B8%A1%E6%96%B9%E4%BD%BF%E3%81%88%E3%82%8B%0A%20%20%20%20println%21%28%22%E5%85%83%E3%81%AE%E6%96%87%E5%AD%97%E5%88%97%3A%20%7B%7D%22%2C%20s%29%3B%0A%20%20%20%20println%21%28%22%E3%82%B9%E3%83%A9%E3%82%A4%E3%82%B91%3A%20%7B%7D%22%2C%20hello%29%3B%0A%20%20%20%20println%21%28%22%E3%82%B9%E3%83%A9%E3%82%A4%E3%82%B92%3A%20%7B%7D%22%2C%20world%29%3B%0A%7D)
 
 `&s[0..5]` のように、`&` と範囲 `[start..end]` を指定することで、`s` の一部を指すスライスを作成できます。この操作は所有権を移動させません。
 
