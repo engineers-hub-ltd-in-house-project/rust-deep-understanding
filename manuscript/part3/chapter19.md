@@ -118,6 +118,7 @@ fn main() {
     println!("a_mut: {}", a_mut);
 }
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=use%20std%3A%3Arc%3A%3ARc%3B%0Ause%20std%3A%3Acell%3A%3ARefCell%3B%0A%0Afn%20main()%20%7B%0A%20%20%20%20let%20shared_value%20%3D%20Rc%3A%3Anew(RefCell%3A%3Anew(5))%3B%0A%0A%20%20%20%20let%20a%20%3D%20Rc%3A%3Aclone(%26shared_value)%3B%0A%20%20%20%20let%20b%20%3D%20Rc%3A%3Aclone(%26shared_value)%3B%0A%0A%20%20%20%20%2F%2F%20%E6%9C%80%E5%88%9D%E3%81%AE%E5%8F%AF%E5%A4%89%E5%80%9F%E7%94%A8%E3%81%AF%E6%88%90%E5%8A%9F%E3%81%99%E3%82%8B%0A%20%20%20%20let%20mut%20b_mut%20%3D%20b.borrow_mut()%3B%0A%20%20%20%20*b_mut%20%2B%3D%2010%3B%0A%20%20%20%20println!(%22b_mut%3A%20%7B%7D%22%2C%20b_mut)%3B%0A%0A%20%20%20%20%2F%2F%20%E5%90%8C%E3%81%98%E3%82%B9%E3%82%B3%E3%83%BC%E3%83%97%E5%86%85%E3%81%A7%E3%80%81%E3%81%95%E3%82%89%E3%81%AB%E5%8F%AF%E5%A4%89%E5%80%9F%E7%94%A8%E3%81%97%E3%82%88%E3%81%86%E3%81%A8...%0A%20%20%20%20let%20mut%20a_mut%20%3D%20a.borrow_mut()%3B%20%2F%2F%20%F0%9F%92%A5%20%E3%83%91%E3%83%8B%E3%83%83%E3%82%AF%EF%BC%81%0A%20%20%20%20%2F%2F%20thread%20%27main%27%20panicked%20at%20%27already%20borrowed%3A%20BorrowMutError%27%0A%0A%20%20%20%20*a_mut%20%2B%3D%205%3B%0A%20%20%20%20println!(%22a_mut%3A%20%7B%7D%22%2C%20a_mut)%3B%0A%7D)
 `b_mut` という可変借用が存在するスコープで、`a.borrow_mut()` を呼び出したため、実行時エラーが発生しました。これは、コンパイラが見逃した借用規則違反を、`RefCell` が実行時に捕まえてくれた結果です。
 
 ## 19.4 `Rc<RefCell<T>>` の組み合わせ
