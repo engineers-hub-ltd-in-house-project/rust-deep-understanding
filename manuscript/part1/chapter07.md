@@ -207,26 +207,15 @@ int main() {
 
 オンラインの実行環境では、安全上の理由からこのコードの挙動が分かりにくい場合があります。実際の環境で何が起こるかを見るために、Docker を使ってこの「痛み」を体験してみましょう。
 
-まず、作業用のディレクトリを作成し、その中に `dangle.c` という名前で先ほどの C のコードを保存します。
+この書籍では、実行可能なサンプルコードを `code-samples` ディレクトリに章ごとのフォルダに分けてまとめています。この C のサンプルは、`code-samples/chapter07/dangling-pointer-c/` の中に `dangle.c` と `Dockerfile` として配置されています。
 
-次に、同じディレクトリに `Dockerfile` という名前で以下のファイルを作成してください。
+ターミナルで、まずこのディレクトリに移動してください。
 
-```dockerfile
-# gcc コンパイラを含む軽量なイメージを使用
-FROM gcc:latest
-
-# C のソースファイルをコンテナにコピー
-WORKDIR /usr/src/app
-COPY dangle.c .
-
-# C コードをコンパイル (-Wall で全ての警告を有効に)
-RUN gcc -o dangle dangle.c -Wall
-
-# 実行可能ファイルを実行するコマンドを設定
-CMD ["./dangle"]
+```bash
+cd code-samples/chapter07/dangling-pointer-c/
 ```
 
-準備ができたら、ターミナルでそのディレクトリに移動し、以下のコマンドを実行します。
+次に、以下のコマンドを実行して Docker イメージをビルドし、コンテナを実行します。
 
 ```bash
 # 1. Docker イメージをビルド
@@ -255,7 +244,7 @@ fn dangle() -> &String { // dangle は String への参照を返そうとする
     &s // s への参照を返すが...
 } // ...ここで s はスコープを抜け、メモリが解放される！
 ```
-[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20main%28%29%20%7B%0A%20%20%20%20let%20reference_to_nothing%20%3D%20dangle%28%29%3B%0A%7D%0A%0Afn%20dangle%28%29%20-%3E%20%26String%20%7B%20//%20dangle%20%E3%81%AF%20String%20%E3%81%B8%E3%81%AE%E5%8F%82%E7%85%A7%E3%82%92%E8%BF%94%E3%81%9D%E3%81%86%E3%81%A8%E3%81%99%E3%82%8B%0A%20%20%20%20let%20s%20%3D%20String%3A%3Afrom%28%22hello%22%29%3B%20//%20s%20%E3%81%AF%20dangle%20%E9%96%A2%E6%95%B0%E3%81%AE%E4%B8%AD%E3%81%A7%E4%BD%9C%E3%82%89%E3%82%8C%E3%82%8B%0A%0A%20%20%20%20%26s%20//%20s%20%E3%81%B8%E3%81%AE%E5%8F%82%E7%85%A7%E3%82%92%E8%BF%94%E3%81%99%E3%81%8C...%0A%7D%20//%20...%E3%81%93%E3%81%93%E3%81%A7%20s%20%E3%81%AF%E3%82%B9%E3%82%B3%E3%83%BC%E3%83%97%E3%82%92%E6%8A%9C%E3%81%91%E3%80%81%E3%83%A1%E3%83%A0%E3%83%AA%E3%81%8C%E8%A7%A3%E6%94%BE%E3%81%95%E3%82%8C%E3%82%8B%EF%BC%81)
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20main%28%29%20%7B%0A%20%20%20%20let%20reference_to_nothing%20%3D%20dangle%28%29%3B%0A%7D%0A%0Afn%20dangle%28%29%20-%3E%20%26String%20%7B%20//%20dangle%20%E3%81%AF%20String%20%E3%81%B8%E3%81%AE%E5%8F%82%E7%85%A7%E3%82%92%E8%BF%94%E3%81%9D%E3%81%86%E3%81%A8%E3%81%99%E3%82%8B%0A%20%20%20%20let%20s%20%3D%20String%3A%3Afrom%28%22hello%22%29%3B%20//%20s%20%E3%81%AF%20dangle%20%E9%96%A2%E6%95%B0%E3%81%AE%E4%B8%AD%E3%81%A7%E4%BD%9C%E3%82%89%E3%82%8C%E3%82%8B%0A%0A%20%20%20%20%26s%20//%20s%20%E3%81%B8%E3%81%AE%E5%8F%82%E7%85%A7%E3%82%92%E8%BF%94%E3%81%99%E3%81%8C...%0A%7D%20//%20...%E3%81%93%E3%81%93%E3%81%A7%20s%20%E3%81%AF%E3%82%B9%E3%82%B3%E3%83%BC%E3%83%97%E3%82%92%E6%8A%9C%E3%81%91%E3%80%81%E3%83%A1%E3%83%A2%E3%83%AA%E3%81%8C%E8%A7%A3%E6%94%BE%E3%81%95%E3%82%8C%E3%82%8B%EF%BC%81)
 `dangle` 関数が終了する時点で `s` の所有権は破棄され、ヒープ上のデータは解放されます。そのため、返されようとしている `&s` が指す先は無効になります。コンパイラはこの危険な状況を検知し、コンパイルを中断します。
 
 ```text
