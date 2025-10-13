@@ -48,6 +48,7 @@ for num in &numbers {
 }
 println!("Sum: {}", sum);
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20main%28%29%20%7B%0A%20%20%20%20let%20numbers%20%3D%20vec!%5B1%2C%202%2C%203%2C%204%2C%205%5D%3B%0A%20%20%20%20let%20mut%20sum%20%3D%200%3B%0A%20%20%20%20for%20num%20in%20%26numbers%20%7B%0A%20%20%20%20%20%20%20%20sum%20%2B%3D%20num%3B%0A%20%20%20%20%7D%0A%20%20%20%20println!%28%22Sum%3A%20%7B%7D%22%2C%20sum%29%3B%0A%7D)
 
 このコードは、C言語の `for` ループのように、コンピュータが実行する処理を直接的に記述した低レベルなループです。このような単純なループは、コンパイラが「複数の計算を同時に実行する(ベクトル化)」「ループの判断コストを削減する(ループ展開)」といった変換を施しやすいため、非常に高速な機械語になります。これを、これから比較するための性能のベースラインと考えましょう。
 
@@ -58,6 +59,7 @@ let numbers = vec![1, 2, 3, 4, 5];
 let sum: i32 = numbers.iter().sum();
 println!("Sum: {}", sum);
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20main%28%29%20%7B%0A%20%20%20%20let%20numbers%20%3D%20vec!%5B1%2C%202%2C%203%2C%204%2C%205%5D%3B%0A%20%20%20%20let%20sum%3A%20i32%20%3D%20numbers.iter%28%29.sum%28%29%3B%0A%20%20%20%20println!%28%22Sum%3A%20%7B%7D%22%2C%20sum%29%3B%0A%7D)
 
 さらに、もっと複雑な処理も可能です。例えば、「偶数だけを2倍して合計する」処理を見てみましょう。
 
@@ -70,6 +72,7 @@ let sum_of_doubled_evens: i32 = numbers
     .sum();                   // 合計する
 println!("Sum of doubled evens: {}", sum_of_doubled_evens); // -> 12 ( (2*2) + (4*2) )
 ```
+[Rust Playgroundで試す](https://play.rust-lang.org/?version=stable&mode=debug&edition=2021&code=fn%20main%28%29%20%7B%0A%20%20%20%20let%20numbers%20%3D%20vec!%5B1%2C%202%2C%203%2C%204%2C%205%5D%3B%0A%20%20%20%20let%20sum_of_doubled_evens%3A%20i32%20%3D%20numbers%0A%20%20%20%20%20%20%20%20.iter%28%29%0A%20%20%20%20%20%20%20%20.filter%28%7C%26%26x%7C%20x%20%25%202%20%3D%3D%200%29%20%2F%2F%20%E5%81%B6%E6%95%B0%E3%81%A0%E3%81%91%E3%82%92%E6%AE%8B%E3%81%99%0A%20%20%20%20%20%20%20%20.map%28%7C%26x%7C%20x%20%2A%202%29%20%20%20%20%20%20%20%20%20%20%2F%2F%202%E5%80%8D%E3%81%99%E3%82%8B%0A%20%20%20%20%20%20%20%20.sum%28%29%3B%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%2F%2F%20%E5%90%88%E8%A8%88%E3%81%99%E3%82%8B%0A%20%20%20%20println!%28%22Sum%20of%20doubled%20evens%3A%20%7B%7D%22%2C%20sum_of_doubled_evens%29%3B%20%2F%2F%20-%3E%2012%20%28%20%282*2%29%20%2B%20%284*2%29%20%29%0A%7D)
 
 `filter`, `map`, `sum` といったメソッドが連なっています。他の言語であれば、このような高レベルなメソッドチェーンは、中間的なデータ構造を生成したり、複数のループ処理に展開されたりして、パフォーマンスが低下する可能性があります。
 
