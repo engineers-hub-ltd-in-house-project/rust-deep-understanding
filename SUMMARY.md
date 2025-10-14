@@ -38,15 +38,19 @@
 - [第 25 章：実践的な非同期プログラミング](./manuscript/part5/chapter25.md)
 
 ## 第 6 部：実践プロジェクト
-- [第 26 章：CLI ツールの開発](./manuscript/part6/chapter26.md)
-- [第 27 章：Web アプリケーション (Actix/Axum)](./manuscript/part6/chapter27.md)
-- [第 28 章：データ処理とファイル I/O](./manuscript/part6/chapter28.md)
-- [第 29 章：Python/Go コードからの移行戦略](./manuscript/part6/chapter29.md)
+- [第 26 章：実践：mini-grep の作成](./manuscript/part6/chapter26.md)
+- [第 27 章：リファクタリング：イテレータとクロージャの活用](./manuscript/part6/chapter27.md)
+- [第 28 章：実践：Webアプリケーション (Axum)](./manuscript/part6/chapter28.md)
+- [第 29 章：実践：CSVパーサーライブラリの作成](./manuscript/part6/chapter29.md)
+- [第 30 章：実践：TUIアプリケーション](./manuscript/part6/chapter30.md)
+- [第 31 章：実践：WebAssemblyモジュール](./manuscript/part6/chapter31.md)
+- [第 32 章：実践：フルスタックWebアプリ (Leptos)](./manuscript/part6/chapter32.md)
 
 ## 第 7 部：発展的トピック
-- [第 30 章：マクロの基礎](./manuscript/part7/chapter30.md)
-- [第 31 章：Unsafe コードと最適化](./manuscript/part7/chapter31.md)
-- [第 32 章：本番環境へのデプロイ](./manuscript/part7/chapter32.md)
+- [第 33 章：Python/Go コードからの移行戦略](./manuscript/part7/chapter33.md)
+- [第 34 章：マクロの基礎](./manuscript/part7/chapter34.md)
+- [第 35 章：Unsafe コードと最適化](./manuscript/part7/chapter35.md)
+- [第 36 章：本番環境へのデプロイ](./manuscript/part7/chapter36.md)
 
 ## 付録
 - [付録 A：Rust のイディオム集](./manuscript/appendix/idioms.md)
