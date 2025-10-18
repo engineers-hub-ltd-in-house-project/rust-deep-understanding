@@ -1,319 +1,187 @@
-# Rust Deep Understanding EPUB変換ガイド
+# EPUB 変換ガイド
 
-本ガイドは、本プロジェクトのMarkdownファイルをEPUB形式に変換するための手順書です。
+本ガイドは、このプロジェクトの Markdown 原稿から一つの EPUB ファイルを生成するための手順書です。
 
-## 前提条件
+---
 
-以下のツールをインストールしてください：
+## 概要
 
-### 必須ツール
-- Git
-- Pandoc (https://pandoc.org/installing.html)
+このガイドでは `Pandoc` というツールを利用して、`manuscript` ディレクトリ内の Markdown ファイルを結合し、電子書籍形式 (EPUB) に変換します。
 
-### インストール方法
+最終的な成果物として、`rust-deep-understanding.epub` というファイルがプロジェクトのルートディレクトリに生成されます。
 
-#### macOS
+---
+
+## 1. 準備
+
+まず、EPUB の生成に必要なツールをインストールし、書籍の品質を高めるためのアセット（素材）を準備します。
+
+### 必要なツール: Pandoc
+
+EPUB の変換には `Pandoc` が不可欠です。以下の手順でインストールしてください。
+
+- **公式サイト:** [pandoc.org/installing.html](https://pandoc.org/installing.html)
+
+**macOS (Homebrew)**
 ```bash
 brew install pandoc
 ```
 
-#### Ubuntu/Debian
+**Ubuntu/Debian**
 ```bash
 sudo apt-get install pandoc
 ```
 
-#### Windows
-Pandocの公式サイトからインストーラーをダウンロード
-https://pandoc.org/installing.html
+**Windows**
+公式サイトからインストーラーをダウンロードして実行します。
 
+### アセットの準備 (推奨)
+
+出版レベルの EPUB を生成するために、以下のファイルをプロジェクトルートに配置することを推奨します。
+
+- **`metadata.yaml`**: 書籍のタイトルや著者名などのメタデータを定義します。
+- **`images/cover.png`**: EPUB の表紙となる画像です。
+- **`style.css`**: コードブロックなどの見た目を整えるためのスタイルシートです。
+
+#### `metadata.yaml` の例
+
+```yaml
 ---
-
-## 方法1: Pandoc を使用（推奨・シンプル）
-
-### ステップ1: リポジトリのクローン（外部ユーザー向け）
-```bash
-git clone https://github.com/engineers-hub-ltd-in-house-project/rust-deep-understanding.git
-cd rust-deep-understanding
+title: 'Python/Go エンジニアのための実践 Rust 入門'
+author: 'Engineers Hub'
+language: 'ja-JP'
+date: '2025-10-18'
+publisher: 'Engineers Hub Publishing'
+rights: '© 2025 Engineers Hub. All rights reserved.'
+---
 ```
 
-既にリポジトリをクローン済みの場合は、このステップを省略してください。
+#### `images/cover.png` の準備
 
-### ステップ2: manuscript ディレクトリに移動
-```bash
-cd manuscript
-```
+`images` ディレクトリを作成し、その中に表紙として使用したい画像 (例: `cover.png`) を配置します。
+Kindle が推奨する理想的な画像の寸法は、**高さ 2,560 ピクセル x 幅 1,600 ピクセル** です。
 
-### ステップ3: ファイル構造を確認
-```bash
-ls -la
-```
+#### `style.css` の例
 
-現在の構造:
-```
-manuscript/
-├── part0/      # 第0部：導入編
-├── part1/      # 第1部：Rustの基礎
-├── part2/      # 第2部：データ構造
-├── part3/      # 第3部：抽象化とコード再利用
-├── part4/      # 第4部：プロジェクト管理とテスト
-├── part5/      # 第5部：並行性とAsync
-├── part6/      # 第6部：実践プロジェクト
-├── part7/      # 第7部：発展的トピック
-└── appendix/   # 付録
-```
+```css
+/* style.css */
+code {
+  font-family: "Courier New", Courier, monospace;
+  background-color: #f4f4f4;
+  padding: 2px 4px;
+  border-radius: 4px;
+}
 
-### ステップ4: 全Markdownファイルを結合してEPUB変換
-```bash
-pandoc $(find . -name "*.md" | sort) \
-  --from markdown \
-  --to epub3 \
-  --output ../rust-deep-understanding.epub \
-  --metadata title="Python/Goエンジニアのための実践Rust入門" \
-  --metadata author="Engineers Hub" \
-  --metadata language="ja" \
-  --toc \
-  --toc-depth=3 \
-  --epub-chapter-level=2
-```
-
-### ステップ5: 出力を確認
-```bash
-cd ..
-ls -lh rust-deep-understanding.epub
+pre {
+  background-color: #f4f4f4;
+  padding: 1em;
+  overflow-x: auto;
+  border-radius: 5px;
+}
 ```
 
 ---
 
-## 方法2: SUMMARY.md の順序に従って変換
+## 2. 変換手順 (推奨ワークフロー)
 
-### ステップ1-2: 方法1と同様
+`SUMMARY.md` に記載された章の順序通りに EPUB を生成する、最も確実で推奨される方法です。
 
-### ステップ3: SUMMARY.md を確認
-```bash
-cat ../SUMMARY.md
-```
+### ステップ 1: EPUB 生成スクリプトの実行
 
-### ステップ4: SUMMARY.md に記載された順序でファイルを指定
-
-SUMMARY.mdの内容に基づいて、手動でファイルリストを作成：
-
-```bash
-pandoc \
-  part0/chapter00.md \
-  part1/chapter01.md \
-  part1/chapter02.md \
-  part1/chapter03.md \
-  part1/chapter04.md \
-  part1/chapter05.md \
-  part1/chapter06.md \
-  part1/chapter07.md \
-  part1/chapter08.md \
-  part1/chapter09.md \
-  part2/chapter10.md \
-  part2/chapter11.md \
-  part2/chapter12.md \
-  part3/chapter13.md \
-  part3/chapter14.md \
-  part3/chapter15.md \
-  part3/chapter16.md \
-  part4/chapter17.md \
-  part4/chapter18.md \
-  part4/chapter19.md \
-  part4/chapter20.md \
-  part4/chapter21.md \
-  part5/chapter22.md \
-  part5/chapter23.md \
-  part5/chapter24.md \
-  part6/chapter25.md \
-  part6/chapter26.md \
-  part6/chapter27.md \
-  part6/chapter28.md \
-  part7/chapter29.md \
-  part7/chapter30.md \
-  part7/chapter31.md \
-  part7/chapter32.md \
-  appendix/appendixA.md \
-  appendix/appendixB.md \
-  appendix/appendixC.md \
-  --from markdown \
-  --to epub3 \
-  --output ../rust-deep-understanding.epub \
-  --metadata title="Python/Goエンジニアのための実践Rust入門" \
-  --metadata author="Engineers Hub" \
-  --metadata language="ja" \
-  --toc \
-  --toc-depth=3 \
-  --epub-chapter-level=2
-```
-
----
-
-## 方法3: mdBook を使用（将来的な対応）
-
-現在、本プロジェクトはmdBook形式に対応していませんが、将来的に対応する場合は以下の手順を使用できます。
-
-### 前提: mdBookのインストール
-```bash
-cargo install mdbook
-cargo install mdbook-epub
-```
-
-### book.toml の作成
-プロジェクトルートに以下の内容で作成：
-
-```toml
-[book]
-title = "Python/Goエンジニアのための実践Rust入門"
-authors = ["Engineers Hub"]
-language = "ja"
-src = "manuscript"
-
-[output.html]
-
-[output.epub]
-```
-
-### EPUBをビルド
-```bash
-mdbook build
-```
-
-### 出力確認
-```bash
-ls -lh book/epub/
-```
-
----
-
-## カスタマイズオプション
-
-### メタデータの追加
-```bash
---metadata title="タイトル" \
---metadata author="著者名" \
---metadata language="ja" \
---metadata date="2025-10-18" \
---metadata publisher="Engineers Hub"
-```
-
-### 表紙画像の追加
-```bash
---epub-cover-image=cover.png
-```
-
-### CSSスタイルの適用
-```bash
---css=style.css
-```
-
-### チャプターレベルの調整
-```bash
---epub-chapter-level=1  # H1がチャプター
---epub-chapter-level=2  # H2がチャプター（デフォルト）
-```
-
----
-
-## トラブルシューティング
-
-### エラー: pandoc: command not found
-Pandocをインストールしてください。
-
-### エラー: ファイルが見つからない
-manuscript ディレクトリ内のファイル構造を確認してください。
-```bash
-find manuscript -name "*.md"
-```
-
-### 画像が表示されない
-相対パスで画像を参照している場合、画像ファイルも含める必要があります。
-```bash
---resource-path=.:manuscript:manuscript/images
-```
-
-### 日本語が文字化けする
-UTF-8エンコーディングを明示的に指定します。
-```bash
---metadata lang="ja"
-```
-
----
-
-## 推奨ワークフロー
-
-1. まず方法1を試す（最もシンプル）
-2. 順序が重要な場合は方法2
-3. プロジェクトがmdBook対応済みなら方法3
-
----
-
-## 変換後の確認
-
-### EPUBリーダーで開く
-- macOS: Apple Books
-- Windows: Calibre
-- Linux: Calibre または FBReader
-- ブラウザ拡張: EPUBReader
-
-### EPUBの内容を確認（任意）
-```bash
-# EPUBは実際にはZIPファイル
-unzip -l rust-deep-understanding.epub
-```
-
----
-
-## 補足: スクリプト化
-
-頻繁に変換する場合、以下のシェルスクリプトを作成できます：
+以下の内容で `build-epub.sh` という名前のシェルスクリプトをプロジェクトのルートに作成します。
 
 ```bash
 #!/bin/bash
-# convert-to-epub.sh
+# build-epub.sh
+# SUMMARY.md の順序に従って EPUB を生成するスクリプト
 
-cd manuscript
+# SUMMARY.md から Markdown ファイルのリストを抽出 (- [title](path) の形式を想定)
+FILES=$(grep -oP '\[.*\]\(\K[^)]+' SUMMARY.md)
 
-pandoc $(find . -name "*.md" | sort) \
-  --from markdown \
+# Pandoc を実行して EPUB を生成
+pandoc ${FILES} \
+  --from markdown+mark \
   --to epub3 \
-  --output ../rust-deep-understanding.epub \
-  --metadata title="Python/Goエンジニアのための実践Rust入門" \
-  --metadata author="Engineers Hub" \
-  --metadata language="ja" \
+  --output rust-deep-understanding.epub \
+  --resource-path=./manuscript \
   --toc \
   --toc-depth=3 \
-  --epub-chapter-level=2
+  --epub-chapter-level=2 \
+  --metadata-file=metadata.yaml \
+  --epub-cover-image=images/cover.png \
+  --css=style.css
 
-echo "変換完了: rust-deep-understanding.epub"
+# 完了メッセージ
+if [ $? -eq 0 ]; then
+  echo "✅ EPUB 生成完了: rust-deep-understanding.epub"
+else
+  echo "❌ EPUB 生成に失敗しました。"
+fi
 ```
 
-実行権限を付与：
+スクリプトに実行権限を付与し、実行します。
+
 ```bash
-chmod +x convert-to-epub.sh
-./convert-to-epub.sh
+chmod +x build-epub.sh
+./build-epub.sh
 ```
+
+### ステップ 2: 生成された EPUB の確認
+
+変換が完了したら、`rust-deep-understanding.epub` が生成されていることを確認します。
+Calibre などの EPUB リーダーでファイルを開き、以下の点を確認してください。
+
+- 目次が正しい順序で表示されているか
+- 表紙、タイトル、著者名が正しく設定されているか
+- 画像やコードブロックの表示崩れがないか
+
+**主な EPUB リーダー:**
+- **macOS:** `Apple Books`
+- **Windows / Linux:** `Calibre`
+- **ブラウザ拡張:** `EPUBReader`
 
 ---
 
-## プロジェクト構造との対応
+## 3. その他の変換方法
 
-本プロジェクトの構造:
+### ファイル名順での簡易変換
+
+章の順序を厳密に問わないテストビルドなど、手早く変換したい場合に利用できます。
+
+```bash
+pandoc manuscript/part*/*.md \
+  --from markdown \
+  --to epub3 \
+  --output rust-deep-understanding-quick.epub \
+  --metadata title="Rust Deep Understanding (Quick Build)" \
+  --toc
 ```
-rust-deep-understanding/
-├── docs/                    # 本ガイドを含むドキュメント
-├── manuscript/              # 本書の原稿（Markdown形式）
-│   ├── part0/              # 第0部：導入編
-│   ├── part1/              # 第1部：Rustの基礎
-│   ├── part2/              # 第2部：データ構造
-│   ├── part3/              # 第3部：抽象化とコード再利用
-│   ├── part4/              # 第4部：プロジェクト管理とテスト
-│   ├── part5/              # 第5部：並行性とAsync
-│   ├── part6/              # 第6部：実践プロジェクト
-│   ├── part7/              # 第7部：発展的トピック
-│   └── appendix/           # 付録
-├── code-samples/           # サンプルコード
-├── proposal/               # 企画資料
-├── README.md               # プロジェクト概要
-├── SUMMARY.md              # 目次
-└── WRITING_GUIDELINES.md   # 執筆ガイドライン
+
+*注意: この方法はファイル名のアルファベット順でファイルを結合するため、意図した章の順序にならない可能性があります。*
+
+### mdBook を使用 (将来的な対応)
+
+本プロジェクトが `mdBook` 形式に完全対応した場合は、以下のコマンドで EPUB を生成できます。
+
+```bash
+# mdBook と mdbook-epub のインストール
+cargo install mdbook mdbook-epub
+
+# ビルド
+mdbook build
 ```
+
+生成された EPUB は `book/epub/` ディレクトリに格納されます。
+
+---
+
+## 4. トラブルシューティング
+
+### `pandoc: command not found`
+Pandoc がインストールされていないか、PATH が通っていません。準備のセクションを参考にインストールしてください。
+
+### 画像が表示されない
+`pandoc` コマンドに `--resource-path` オプションを追加し、画像が格納されているディレクトリへのパスを指定します。推奨ワークフローのスクリプトには、この設定が既に含まれています。
+
+### 日本語が文字化けする
+Markdown ファイルが UTF-8 形式で保存されていることを確認してください。また、`metadata.yaml` の `language` 設定が `ja-JP` になっていることを確認します。
