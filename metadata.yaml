@@ -1,27 +1,7 @@
-# PandocによるEPUB変換用メタデータファイル
-
 ---
-title: Python/Go エンジニアのための実践 Rust 入門
-subtitle: 所有権システムから非同期処理まで徹底解説
-author:
-  - name: Engineers Hub
+title: 'Python/Go エンジニアのための実践 Rust 入門'
+author: Engineers Hub
 publisher: Engineers Hub Publishing
 language: ja-JP
-date: 2025-10-19
 rights: © 2025 Engineers Hub. All rights reserved.
-description: >
-  PythonやGoの経験があるエンジニアがRustを実践的に学ぶための技術書。
-  所有権システム、借用、ライフタイム、トレイト、非同期処理など、Rustの核心的概念を実例とともに解説。
-subject:
-  - Rust
-  - プログラミング
-  - メモリ安全性
-  - 所有権
-  - 非同期処理
-  - システムプログラミング
-  - Python Go 比較
-identifier:
-  # ISBNなどの識別子があればここに記述
-  # scheme: ISBN
-  # text: "978-4-xxxx-xxxx-x"
-cover-image: cover.jpg # 表紙画像のファイルパス
+...

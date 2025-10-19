@@ -213,30 +213,33 @@ Pandoc を使用して Markdown ファイルを EPUB3 に変換する際に必�
 
 【書籍情報】
 - タイトル: Python/Go エンジニアのための実践 Rust 入門
-- サブタイトル: 所有権システムから非同期処理まで徹底解説
 - 著者: Engineers Hub
 - 出版社: Engineers Hub Publishing
 - 言語: 日本語 (ja-JP)
-- 出版日: 2025-10-19
 - 著作権表記: © 2025 Engineers Hub. All rights reserved.
-- 概要: Python や Go の経験があるエンジニアが Rust を実践的に学ぶための技術書。所有権システム、借用、ライフタイム、トレイト、非同期処理など、Rust の核心的概念を実例とともに解説。
 
 【必要な項目】
 - title
-- subtitle
 - author
 - publisher
-- language
-- date
+- language (BCP 47形式: ja-JP, en-US等)
 - rights
-- description
-- subject (カテゴリー・キーワード)
-- その他 EPUB3 メタデータとして有用な項目
 
 【出力形式】
 - YAML 形式
 - Pandoc 準拠
+- **重要**: ファイル先頭は `---`、末尾は `...` で終わること (必須)
+- titleにスラッシュやコロンが含まれる場合はシングルクォートで囲むこと
 - コメント付き (各項目の説明)
+
+【サンプル】
+---
+title: 'Python/Go エンジニアのための実践 Rust 入門'
+author: Engineers Hub
+publisher: Engineers Hub Publishing
+language: ja-JP
+rights: © 2025 Engineers Hub. All rights reserved.
+...
 
 ファイル名: metadata.yaml (プロジェクトルートに配置)
 ```
@@ -300,3 +303,31 @@ EPUB3 用のスタイルシート (style.css) を作成してください。技�
 -   各指示は独立しているため、順不同で実行可能
 -   生成された資料は必ず人間がレビューし、プロジェクト固有の情報を補完すること
 -   特に価格設定、税務情報、個人情報に関わる部分は慎重に確認すること
+
+## 重要: Pandoc EPUB生成時の必須事項
+
+EPUB生成時は必ず以下のコマンドを使用すること:
+
+```bash
+pandoc manuscript/part*/*.md \
+  --from markdown-yaml_metadata_block \
+  --to epub3 \
+  --output rust-deep-understanding.epub \
+  --resource-path=./manuscript \
+  --toc \
+  --toc-depth=3 \
+  --split-level=2 \
+  --metadata-file=metadata.yaml \
+  --epub-cover-image=images/cover.png \
+  --css=style.css
+```
+
+**必須オプション**:
+- `--from markdown-yaml_metadata_block`: manuscript内の `---` をYAMLブロックとして解釈しない
+- `--split-level=2`: 章レベルでファイル分割（`--epub-chapter-level`は非推奨）
+
+**よくあるエラーと対処法**:
+- `YAML parse exception`: `--from markdown-yaml_metadata_block` が抜けている
+- メタデータ反映されない: metadata.yamlの末尾が `...` で終わっていない
+
+詳細は [プロジェクトルートのCLAUDE.md](../../CLAUDE.md) を参照すること。

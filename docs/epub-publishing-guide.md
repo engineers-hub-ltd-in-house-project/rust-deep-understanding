@@ -24,19 +24,26 @@ brew install pandoc
 
 プロジェクトのルートディレクトリで以下のコマンドを実行します。
 
+**重要**: `--from markdown-yaml_metadata_block` オプションは必須です。これを省略するとYAMLパースエラーが発生します。
+
 ```bash
 pandoc manuscript/part*/*.md \
-  --from markdown \
+  --from markdown-yaml_metadata_block \
   --to epub3 \
   --output rust-deep-understanding.epub \
   --resource-path=./manuscript \
   --toc \
   --toc-depth=3 \
-  --epub-chapter-level=2 \
+  --split-level=2 \
   --metadata-file=metadata.yaml \
   --epub-cover-image=images/cover.png \
   --css=style.css
 ```
+
+**オプション説明**:
+- `--from markdown-yaml_metadata_block`: manuscript内の `---` をYAMLブロックとして解釈しない（必須）
+- `--split-level=2`: 章レベルでファイルを分割（`--epub-chapter-level`は非推奨）
+- `--toc-depth=3`: 目次の階層を3レベルまで生成
 
 ### 3. メタデータと表紙の準備 (重要)
 
@@ -49,13 +56,17 @@ pandoc manuscript/part*/*.md \
 ```yaml
 ---
 title: 'Python/Go エンジニアのための実践 Rust 入門'
-author: 'Engineers Hub'
-language: 'ja-JP'
-date: '2025-10-18'
-publisher: 'Engineers Hub Publishing'
-rights: '© 2025 Engineers Hub. All rights reserved.'
----
+author: Engineers Hub
+publisher: Engineers Hub Publishing
+language: ja-JP
+rights: © 2025 Engineers Hub. All rights reserved.
+...
 ```
+
+**重要**:
+- ファイルの先頭は `---`、末尾は `...` で終わること
+- titleにスラッシュやコロンが含まれる場合はシングルクォートで囲む
+- languageはBCP 47形式（例: ja-JP, en-US）
 
 #### 表紙画像 (`images/cover.png`)
 
@@ -96,6 +107,35 @@ pre {
 - 画像は表示されているか？
 - コードブロックのスタイルは崩れていないか？
 - メタデータ（タイトル、著者名）は正しいか？
+
+### 5. トラブルシューティング
+
+#### YAML parse exception エラー
+
+**エラーメッセージ**:
+```
+YAML parse exception at line 1, column 0,
+while scanning for the next token:
+found character that cannot start any token
+```
+
+**原因**: manuscript内の `---`（水平線）がYAMLメタデータブロックとして誤認識されている。
+
+**解決方法**: `--from markdown-yaml_metadata_block` オプションを必ず指定する。
+
+#### メタデータが反映されない
+
+**確認事項**:
+- metadata.yamlの末尾が `...` で終わっているか
+- metadata.yamlの先頭行にコメントが含まれていないか
+- 文字コードがUTF-8であるか
+
+#### 表紙画像が表示されない
+
+**確認事項**:
+- `images/cover.png` が存在するか
+- 画像サイズが最低1000px以上あるか（推奨: 2560x1600px）
+- ファイル形式がPNGまたはJPEGであるか
 
 ---
 
