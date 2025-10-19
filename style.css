@@ -1,0 +1,138 @@
+/*
+ * EPUB3用スタイルシート (style.css)
+ * 技術書として読みやすく、主要なE-Readerでの互換性を考慮したデザイン
+ */
+
+/* 基本設定 */
+body {
+    font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif; /* 日本語フォントを優先しつつ、汎用的なサンセリフフォントを設定 */
+    line-height: 1.6; /* 読みやすい行間 */
+    font-size: 100%; /* 基本フォントサイズ（E-Reader側で調整可能） */
+    color: #333; /* 本文色を濃いグレーに設定 */
+    margin: 1em; /* 全体のマージン */
+}
+
+/* 見出しのスタイリング */
+h1, h2, h3, h4, h5, h6 {
+    font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Hiragino Sans", Meiryo, sans-serif;
+    color: #222;
+    margin-top: 1.5em;
+    margin-bottom: 0.8em;
+    line-height: 1.3;
+}
+
+h1 {
+    font-size: 1.8em;
+    border-bottom: 2px solid #ccc;
+    padding-bottom: 0.3em;
+}
+
+h2 {
+    font-size: 1.5em;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 0.2em;
+}
+
+h3 {
+    font-size: 1.2em;
+}
+
+h4 {
+    font-size: 1.1em;
+}
+
+h5 {
+    font-size: 1.0em;
+}
+
+h6 {
+    font-size: 0.9em;
+    color: #555;
+}
+
+/* 段落 */
+p {
+    margin-bottom: 1em;
+}
+
+/* リスト */
+ul,
+ol {
+    margin-left: 1.5em;
+    margin-bottom: 1em;
+}
+
+li {
+    margin-bottom: 0.5em;
+}
+
+/* コードブロックのスタイリング */
+pre {
+    background-color: #f4f4f4; /* 読みやすいグレーの背景 */
+    border: 1px solid #ddd; /* 控えめなボーダー */
+    border-radius: 4px; /* 角丸 */
+    padding: 1em; /* 内側の余白 */
+    margin: 1.5em 0; /* 上下のマージン */
+    overflow-x: auto; /* 横スクロール対応 */
+    font-family: "Fira Code", "Consolas", "Monaco", "Lucida Console", monospace; /* 等幅フォント */
+    font-size: 0.9em;
+    line-height: 1.4;
+    color: #333;
+}
+
+/* インラインコードのスタイリング */
+code {
+    background-color: #f0f0f0; /* 控えめな背景色 */
+    padding: 0.2em 0.4em; /* 内側の余白 */
+    border-radius: 3px; /* 角丸 */
+    font-family: "Fira Code", "Consolas", "Monaco", "Lucida Console", monospace; /* 等幅フォント */
+    font-size: 0.9em;
+    color: #c7254e; /* 強調色 */
+}
+
+/* 引用のスタイリング */
+blockquote {
+    border-left: 4px solid #ccc; /* 左側にボーダー */
+    margin: 1.5em 0;
+    padding: 0.5em 1em;
+    color: #555;
+    font-style: italic;
+}
+
+/* 表のスタイリング */
+table {
+    width: 100%;
+    border-collapse: collapse; /* ボーダーを結合 */
+    margin: 1.5em 0;
+    font-size: 0.9em;
+}
+
+th,
+td {
+    border: 1px solid #ddd; /* セルのボーダー */
+    padding: 0.8em;
+    text-align: left;
+}
+
+th {
+    background-color: #f8f8f8; /* ヘッダーの背景色 */
+    font-weight: bold;
+}
+
+/* リンクのスタイリング */
+a {
+    color: #007bff; /* 青色のリンク */
+    text-decoration: none; /* 下線をなくす */
+}
+
+a:hover {
+    text-decoration: underline; /* ホバーで下線を表示 */
+}
+
+/* 画像 */
+img {
+    max-width: 100%; /* 親要素に合わせて画像をリサイズ */
+    height: auto;
+    display: block;
+    margin: 1em auto; /* 中央寄せ */
+}
